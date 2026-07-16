@@ -24,6 +24,7 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [aspect, setAspect] = useState<number | null>(null);
 
   const t = useRef({ x: 0, y: 0, scale: 1 });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -41,12 +42,20 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
     const el = contentRef.current;
     if (!c || !el) return;
     const s = t.current;
-    // bornes : l'image ne sort jamais complètement du cadre
     const w = c.clientWidth;
     const h = c.clientHeight;
+    // dimensions réelles du contenu (image à sa taille de layout, avant scale) :
+    // on borne d'après elles, pas d'après le cadre, sinon un bord de photo plus
+    // haute que le cadre resterait inatteignable au pan.
+    const cw = el.offsetWidth || w;
+    const ch = el.offsetHeight || h;
     s.scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s.scale));
-    s.x = Math.min(0, Math.max(w - w * s.scale, s.x));
-    s.y = Math.min(0, Math.max(h - h * s.scale, s.y));
+    const sw = cw * s.scale;
+    const sh = ch * s.scale;
+    // si le contenu est plus petit que le cadre sur un axe, on le centre ;
+    // sinon on empêche juste qu'il ne laisse un vide.
+    s.x = sw <= w ? (w - sw) / 2 : Math.min(0, Math.max(w - sw, s.x));
+    s.y = sh <= h ? (h - sh) / 2 : Math.min(0, Math.max(h - sh, s.y));
     el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale})`;
   }, []);
 
@@ -152,11 +161,15 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
   useEffect(() => {
     t.current = { x: 0, y: 0, scale: 1 };
     apply();
-  }, [src, apply]);
+  }, [src, aspect, apply]);
 
   return (
     <div
       ref={containerRef}
+      // le cadre épouse le ratio réel de la photo : plus aucun crop au repos.
+      // Une photo très haute est plafonnée en hauteur mais reste entièrement
+      // atteignable au pan (voir bornes dans apply()).
+      style={{ aspectRatio: aspect ?? undefined, maxHeight: "72dvh" }}
       className={`relative overflow-hidden touch-none select-none bg-neutral-900 ${className ?? ""}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -168,9 +181,15 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
-          alt="Cachette"
+          alt="Hide"
           draggable={false}
-          onLoad={() => setLoaded(true)}
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (img.naturalWidth && img.naturalHeight) {
+              setAspect(img.naturalWidth / img.naturalHeight);
+            }
+            setLoaded(true);
+          }}
           className="w-full h-auto pointer-events-none"
         />
         {loaded && (

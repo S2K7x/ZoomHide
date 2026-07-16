@@ -156,7 +156,7 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
 
       <ZoomPanViewer
         src={detail.photo_url}
-        className="w-full aspect-[3/4] max-h-[62dvh]"
+        className="w-full"
         onTap={(x, y) => {
           if (!gameOver && attemptsLeft > 0) setMarker({ x, y });
         }}
