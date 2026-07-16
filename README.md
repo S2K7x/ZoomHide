@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🔎 Zoom Hide
 
-## Getting Started
+Jeu asynchrone mobile-first : cache un sticker dans une photo de ta vraie vie,
+tes followers zooment pour le retrouver. Pensé pour être partagé en bio
+Instagram, et pour tourner **100% gratuitement** (Vercel Hobby + Supabase Free).
 
-First, run the development server:
+## Stack
+
+- **Next.js (App Router)** — pages 100% client-side, aucune API route (zéro compute Vercel Functions)
+- **Supabase** — Postgres + Storage. Toute la logique sensible est dans des
+  fonctions RPC `security definer` (calcul du succès, limite 3 essais/jour,
+  1 cachette active max)
+- **Zéro lib externe** pour le zoom/pan (Pointer Events + CSS transform), la
+  compression d'image (`<canvas>`) et l'image de partage story 9:16 (`<canvas>`)
+
+## Sécurité (anti-triche)
+
+- La position du sticker (`pos_x/pos_y`) **n'est jamais envoyée au client**
+  avant une tentative. Le feed lit une vue `active_hides` qui exclut ces colonnes.
+- Le succès est calculé **côté serveur** par la RPC `try_attempt()` ; les tables
+  sont verrouillées par RLS sans aucune policy anon (aucun accès direct).
+- La règle « 1 cachette active max » est garantie par un index unique partiel
+  en plus du check dans `create_hide()`.
+- Le re-encodage canvas supprime les métadonnées EXIF (dont la géolocalisation).
+- Bouton « Signaler » sur chaque cachette → table `reports` à reviewer à la main.
+
+## Installation
 
 ```bash
+npm install
+cp .env.example .env.local   # puis remplis les 2 variables
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Variables d'environnement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Où la trouver |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Dashboard → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Settings → API Keys → publishable key (`sb_publishable_...`) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup Supabase
 
-## Learn More
+Le schéma complet est dans [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql)
+(tables, RLS, RPC, bucket Storage `photos`, jobs `pg_cron`).
 
-To learn more about Next.js, take a look at the following resources:
+> ✅ Déjà appliqué sur le projet `ghnnkwpitmlqxkmpkunn`. Pour un nouveau projet :
+> Dashboard → SQL Editor → colle le contenu du fichier → Run.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Jobs pg_cron installés :
+- `expire-hides` (toutes les heures) : passe en `expired` + attribue les badges
+  (`perfect_hide` / `easy` / `hard` / `legendary`)
+- `cleanup-photos` (3h30 chaque nuit) : supprime les photos des cachettes
+  expirées/supprimées depuis plus de 30 jours
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Déploiement Vercel
 
-## Deploy on Vercel
+1. Pousse le repo sur GitHub.
+2. [vercel.com/new](https://vercel.com/new) → importe le repo (framework Next.js
+   auto-détecté, rien à configurer).
+3. Ajoute les 2 variables d'environnement ci-dessus (Production + Preview).
+4. Deploy. Mets l'URL en bio Instagram 🎉
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Gameplay
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 1 cachette active max par joueur, expire après **7 jours**
+- **3 essais par jour** et par cachette (reset quotidien)
+- Personne ne trouve en 7 jours → badge **Cachette Parfaite 💎** (+500 pts)
+- Score cacheur : 10 pts par tentative ratée provoquée + bonus parfaite
+- Score chercheur : 100 pts par trouvaille, malus vitesse (−1/s, cap 50) et
+  ratés préalables (−25)
+- Leaderboards hebdo (reset lundi) + all-time
+- Identité : UUID généré côté client, stocké en `localStorage` (pas de compte)
+
+## Limites connues (MVP)
+
+- Pas de compte → changer de navigateur = nouveau joueur ; un tricheur peut
+  vider son localStorage pour reset ses 3 essais (acceptable pour un jeu entre
+  followers).
+- Le nettoyage storage supprime les métadonnées des objets ; vérifie de temps
+  en temps l'usage réel du bucket dans le dashboard.
+- Modération manuelle : table `reports` à consulter dans le dashboard.
