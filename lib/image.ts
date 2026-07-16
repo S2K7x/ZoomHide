@@ -53,3 +53,45 @@ export async function compressImage(file: File): Promise<{
   ]);
   return { photo, thumbnail, width: main.width, height: main.height };
 }
+
+function loadSrc(src: string, cors = false): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    if (cors) img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Image illisible"));
+    img.src = src;
+  });
+}
+
+// Incruste le sticker DANS la photo (canvas) pour qu'il soit visible par le
+// chercheur — le défi devient de le camoufler via forme/couleur, pas de le
+// rendre introuvable. La position reste dans les pixels : elle n'est jamais
+// envoyée en clair au client, donc le calcul du succès reste côté serveur.
+export async function compositeSticker(
+  photo: Blob,
+  stickerUrl: string,
+  opts: { posX: number; posY: number; sizePct: number; rotation: number },
+  quality = 0.82
+): Promise<Blob> {
+  const url = URL.createObjectURL(photo);
+  const [base, sticker] = await Promise.all([loadSrc(url), loadSrc(stickerUrl)]);
+  URL.revokeObjectURL(url);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = base.naturalWidth;
+  canvas.height = base.naturalHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(base, 0, 0);
+
+  const w = (opts.sizePct / 100) * canvas.width; // sticker carré, % de la largeur
+  const x = (opts.posX / 100) * canvas.width;
+  const y = (opts.posY / 100) * canvas.height;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate((opts.rotation * Math.PI) / 180);
+  ctx.drawImage(sticker, -w / 2, -w / 2, w, w);
+  ctx.restore();
+
+  return toBlob(canvas, quality);
+}

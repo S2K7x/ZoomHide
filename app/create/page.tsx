@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getPlayerId, getPlayerName, setPlayerName } from "@/lib/player";
-import { compressImage } from "@/lib/image";
+import { compressImage, compositeSticker } from "@/lib/image";
 import { SHAPES, shapeDataUrl, hslToHex } from "@/lib/stickers";
 
 type MyHide = {
@@ -81,13 +81,22 @@ export default function CreatePage() {
       setPlayerName(name);
       const base = `${playerId}/${crypto.randomUUID()}`;
 
+      // On incruste le sticker dans la photo ET le thumbnail : le chercheur le
+      // voit (camouflé), et la position n'est jamais transmise en clair.
+      const stickerUrl = shapeDataUrl(shapeId, color);
+      const placement = { posX: pos.x, posY: pos.y, sizePct: size, rotation };
+      const [mainBlob, thumbBlob] = await Promise.all([
+        compositeSticker(photo.blob, stickerUrl, placement, 0.82),
+        compositeSticker(photo.thumb, stickerUrl, placement, 0.72),
+      ]);
+
       const up1 = await supabase.storage
         .from("photos")
-        .upload(`${base}.jpg`, photo.blob, { contentType: "image/jpeg" });
+        .upload(`${base}.jpg`, mainBlob, { contentType: "image/jpeg" });
       if (up1.error) throw new Error(up1.error.message);
       const up2 = await supabase.storage
         .from("photos")
-        .upload(`${base}_thumb.jpg`, photo.thumb, { contentType: "image/jpeg" });
+        .upload(`${base}_thumb.jpg`, thumbBlob, { contentType: "image/jpeg" });
       if (up2.error) throw new Error(up2.error.message);
 
       const photoUrl = supabase.storage.from("photos").getPublicUrl(`${base}.jpg`).data.publicUrl;
