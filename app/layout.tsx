@@ -3,9 +3,9 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Zoom Hide — cache, zoome, trouve",
+  title: "Zoom Hide — hide, zoom, find",
   description:
-    "Cache un sticker dans une photo de ta vraie vie. Tes amis zooment pour le retrouver. 3 essais par jour !",
+    "Hide a shape in a photo from your real life. Your friends zoom in to find it. 3 tries a day!",
 };
 
 export const viewport: Viewport = {
@@ -19,16 +19,16 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body className="min-h-dvh antialiased">
         <main className="mx-auto max-w-md min-h-dvh pb-20">{children}</main>
         <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-white/10 bg-[#1a0d2e]/95 backdrop-blur">
           <div className="mx-auto max-w-md grid grid-cols-4 text-center text-xs">
             {[
-              { href: "/", icon: "🏠", label: "Accueil" },
-              { href: "/play", icon: "🔎", label: "Chercher" },
-              { href: "/create", icon: "📸", label: "Cacher" },
-              { href: "/leaderboard", icon: "🏆", label: "Classement" },
+              { href: "/", icon: "🏠", label: "Home" },
+              { href: "/play", icon: "🔎", label: "Find" },
+              { href: "/create", icon: "📸", label: "Hide" },
+              { href: "/leaderboard", icon: "🏆", label: "Ranking" },
             ].map((l) => (
               <Link
                 key={l.href}

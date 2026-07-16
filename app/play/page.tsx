@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { getSticker, stickerDataUrl } from "@/lib/stickers";
+import { getShape, shapeDataUrl } from "@/lib/stickers";
 
 type Hide = {
   id: string;
   creator_name: string;
   thumbnail_url: string;
   sticker_id: string;
+  sticker_color: string;
   created_at: string;
   expires_at: string;
   total_attempts: number;
@@ -39,19 +40,19 @@ export default function PlayFeed() {
 
   const timeLeft = (iso: string) => {
     const h = Math.max(0, (new Date(iso).getTime() - Date.now()) / 3600000);
-    return h >= 24 ? `${Math.ceil(h / 24)}j` : `${Math.ceil(h)}h`;
+    return h >= 24 ? `${Math.ceil(h / 24)}d` : `${Math.ceil(h)}h`;
   };
 
   return (
     <div className="px-4 pt-8 flex flex-col gap-4">
-      <h1 className="text-2xl font-black">🔎 Cachettes actives</h1>
+      <h1 className="text-2xl font-black">🔎 Active hides</h1>
 
       <div className="flex gap-2 text-sm">
         {(
           [
-            ["recent", "Récentes"],
-            ["hardest", "Difficiles"],
-            ["expiring", "Expirent bientôt"],
+            ["recent", "Newest"],
+            ["hardest", "Hardest"],
+            ["expiring", "Expiring soon"],
           ] as [Sort, string][]
         ).map(([k, label]) => (
           <button
@@ -69,12 +70,12 @@ export default function PlayFeed() {
       </div>
 
       {loading ? (
-        <p className="text-center text-white/60 py-10">Chargement…</p>
+        <p className="text-center text-white/60 py-10">Loading…</p>
       ) : hides.length === 0 ? (
         <div className="text-center py-10 text-white/60">
-          <p>Aucune cachette active pour l&apos;instant.</p>
+          <p>No active hides yet.</p>
           <Link href="/create" className="text-violet-300 underline">
-            Sois le premier à en cacher une !
+            Be the first to hide one!
           </Link>
         </div>
       ) : (
@@ -89,7 +90,7 @@ export default function PlayFeed() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={h.thumbnail_url}
-                  alt="Cachette"
+                  alt="Hide"
                   className="w-full aspect-square object-cover"
                   loading="lazy"
                 />
@@ -99,8 +100,8 @@ export default function PlayFeed() {
                 <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 p-1">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={stickerDataUrl(h.sticker_id)}
-                    alt={getSticker(h.sticker_id).name}
+                    src={shapeDataUrl(h.sticker_id, h.sticker_color)}
+                    alt={getShape(h.sticker_id).name}
                     className="w-5 h-5"
                   />
                 </span>
@@ -109,8 +110,8 @@ export default function PlayFeed() {
                 <p className="font-semibold truncate">{h.creator_name}</p>
                 <p className="text-white/60">
                   {h.total_attempts === 0
-                    ? "Personne n'a encore essayé"
-                    : `${h.fail_pct}% d'échec · ${h.finds} trouvé${h.finds > 1 ? "s" : ""}`}
+                    ? "No one has tried yet"
+                    : `${h.fail_pct}% fail · ${h.finds} found`}
                 </p>
               </div>
             </Link>

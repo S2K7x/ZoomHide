@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="px-4 pt-8 flex flex-col gap-4">
-      <h1 className="text-2xl font-black">🏆 Classement</h1>
+      <h1 className="text-2xl font-black">🏆 Ranking</h1>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <button
@@ -49,7 +49,7 @@ export default function LeaderboardPage() {
             board === "hiders" ? "bg-violet-500" : "bg-white/5 text-white/60"
           }`}
         >
-          🫥 Top Cacheurs
+          🫥 Top Hiders
         </button>
         <button
           onClick={() => setBoard("seekers")}
@@ -57,14 +57,14 @@ export default function LeaderboardPage() {
             board === "seekers" ? "bg-amber-400 text-black" : "bg-white/5 text-white/60"
           }`}
         >
-          🔎 Top Chercheurs
+          🔎 Top Seekers
         </button>
       </div>
 
       <div className="flex gap-2 text-xs">
         {(
           [
-            ["week", "Cette semaine"],
+            ["week", "This week"],
             ["all", "All-time"],
           ] as ["week" | "all", string][]
         ).map(([k, label]) => (
@@ -79,15 +79,15 @@ export default function LeaderboardPage() {
           </button>
         ))}
         {period === "week" && (
-          <span className="ml-auto self-center text-white/40">reset chaque lundi</span>
+          <span className="ml-auto self-center text-white/40">resets every Monday</span>
         )}
       </div>
 
       {loading ? (
-        <p className="text-center text-white/60 py-10">Chargement…</p>
+        <p className="text-center text-white/60 py-10">Loading…</p>
       ) : rows.length === 0 ? (
         <p className="text-center text-white/60 py-10">
-          Personne au classement pour l&apos;instant. À toi de jouer !
+          No one on the board yet. Go play!
         </p>
       ) : (
         <ol className="flex flex-col gap-1.5">
@@ -101,12 +101,12 @@ export default function LeaderboardPage() {
               <span className="w-8 text-center font-bold">{medal(i)}</span>
               <span className="flex-1 truncate font-semibold">
                 {r.name}
-                {r.player_id === me && <span className="text-amber-300 text-xs"> (toi)</span>}
+                {r.player_id === me && <span className="text-amber-300 text-xs"> (you)</span>}
               </span>
               <span className="text-xs text-white/50">
                 {board === "hiders"
-                  ? `${r.fails_caused ?? 0} ratés · ${r.perfect_hides ?? 0}💎`
-                  : `${r.finds ?? 0} trouvé${(r.finds ?? 0) > 1 ? "s" : ""}`}
+                  ? `${r.fails_caused ?? 0} misses · ${r.perfect_hides ?? 0}💎`
+                  : `${r.finds ?? 0} found`}
               </span>
               <b className="text-amber-300">{r.score}</b>
             </li>

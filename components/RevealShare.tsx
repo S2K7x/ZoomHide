@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { stickerDataUrl } from "@/lib/stickers";
+import { shapeDataUrl, DEFAULT_COLOR } from "@/lib/stickers";
 
 type Props = {
   photoUrl: string;
@@ -10,7 +10,8 @@ type Props = {
   sizePct: number;
   rotation: number;
   stickerId: string;
-  headline: string; // ex: "Trouvé en 12s !"
+  color?: string;
+  headline: string; // e.g. "Found in 12s!"
   subline: string;
 };
 
@@ -37,7 +38,7 @@ export default function RevealShare(props: Props) {
 
       const [photo, sticker] = await Promise.all([
         load(props.photoUrl, true),
-        load(stickerDataUrl(props.stickerId), false),
+        load(shapeDataUrl(props.stickerId, props.color ?? DEFAULT_COLOR), false),
       ]);
       if (cancelled) return;
 
@@ -102,7 +103,7 @@ export default function RevealShare(props: Props) {
       ctx.fillText(props.subline, W / 2, py + ph + 200);
       ctx.font = "40px system-ui, sans-serif";
       ctx.fillStyle = "rgba(255,255,255,0.6)";
-      ctx.fillText("Toi aussi, viens jouer — lien en bio", W / 2, H - 90);
+      ctx.fillText("Come play too — link in bio", W / 2, H - 90);
 
       setReady(true);
     })().catch(() => setReady(false));
@@ -139,14 +140,14 @@ export default function RevealShare(props: Props) {
       <canvas
         ref={canvasRef}
         className="w-40 rounded-xl border border-white/20"
-        aria-label="Aperçu story"
+        aria-label="Story preview"
       />
       {ready && (
         <button
           onClick={share}
           className="rounded-full bg-amber-400 text-black font-bold px-6 py-3 active:scale-95 transition"
         >
-          Partager en story 📤
+          Share to story 📤
         </button>
       )}
     </div>

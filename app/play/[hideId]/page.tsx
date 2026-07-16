@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getPlayerId, getPlayerName, setPlayerName } from "@/lib/player";
-import { stickerDataUrl, getSticker } from "@/lib/stickers";
+import { shapeDataUrl, getShape, DEFAULT_COLOR } from "@/lib/stickers";
 import ZoomPanViewer from "@/components/ZoomPanViewer";
 import RevealShare from "@/components/RevealShare";
 
@@ -14,6 +14,7 @@ type Detail = {
   id: string;
   photo_url: string;
   sticker_id: string;
+  sticker_color: string;
   creator_name: string;
   is_creator: boolean;
   expires_at: string;
@@ -33,11 +34,11 @@ type AttemptResult = {
 };
 
 const ERRORS: Record<string, string> = {
-  not_active: "Cette cachette n'est plus active.",
-  own_hide: "C'est ta propre cachette 😄",
-  already_found: "Tu l'as déjà trouvée !",
-  limit_reached: "Plus d'essais aujourd'hui. Reviens demain !",
-  invalid_tap: "Tap invalide, réessaie.",
+  not_active: "This hide is no longer active.",
+  own_hide: "This is your own hide 😄",
+  already_found: "You already found it!",
+  limit_reached: "No attempts left today. Come back tomorrow!",
+  invalid_tap: "Invalid tap, try again.",
 };
 
 export default function HidePage({ params }: { params: Promise<{ hideId: string }> }) {
@@ -56,6 +57,7 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
   const reveal: Reveal | null = result?.reveal ?? detail?.reveal ?? null;
   const found = result?.success || detail?.already_found;
   const attemptsLeft = result?.attempts_left ?? detail?.attempts_left ?? 0;
+  const color = detail?.sticker_color ?? DEFAULT_COLOR;
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_hide_detail", {
@@ -63,12 +65,12 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
       p_player_id: getPlayerId(),
     });
     if (error) {
-      setLoadError("Cachette introuvable.");
+      setLoadError("Hide not found.");
       return;
     }
     const d = data as Detail;
     if (d.error) {
-      setLoadError(ERRORS[d.error] ?? "Cachette indisponible.");
+      setLoadError(ERRORS[d.error] ?? "Hide unavailable.");
       return;
     }
     setDetail(d);
@@ -93,14 +95,14 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
     const { data, error } = await supabase.rpc("try_attempt", {
       p_hide_id: hideId,
       p_player_id: getPlayerId(),
-      p_name: name || getPlayerName() || "Anonyme",
+      p_name: name || getPlayerName() || "Anonymous",
       p_tap_x: marker.x,
       p_tap_y: marker.y,
       p_time_ms: elapsed,
     });
     setSubmitting(false);
     if (error) {
-      setFeedback("Erreur réseau, réessaie.");
+      setFeedback("Network error, try again.");
       return;
     }
     const r = data as AttemptResult;
@@ -115,9 +117,9 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
     if (!r.success) {
       const d = r.distance ?? 100;
       setFeedback(
-        d < 8 ? "🔥 Brûlant ! Tout près…" :
-        d < 18 ? "♨️ Chaud, tu chauffes." :
-        d < 35 ? "🌤️ Tiède." : "🧊 Froid, cherche ailleurs."
+        d < 8 ? "🔥 Burning! So close…" :
+        d < 18 ? "♨️ Hot, getting warmer." :
+        d < 35 ? "🌤️ Lukewarm." : "🧊 Cold, look elsewhere."
       );
     }
   };
@@ -126,12 +128,12 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
     return (
       <div className="px-6 pt-20 text-center flex flex-col gap-4">
         <p className="text-lg">{loadError}</p>
-        <Link href="/play" className="text-violet-300 underline">← Retour au feed</Link>
+        <Link href="/play" className="text-violet-300 underline">← Back to feed</Link>
       </div>
     );
   }
   if (!detail) {
-    return <p className="p-8 text-center text-white/60">Chargement…</p>;
+    return <p className="p-8 text-center text-white/60">Loading…</p>;
   }
 
   const gameOver = found || (attemptsLeft === 0 && result != null) || detail.is_creator;
@@ -140,17 +142,16 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
     <div className="flex flex-col gap-3 pt-3">
       <div className="px-4 flex items-center justify-between text-sm">
         <Link href="/play" className="text-white/60">← Feed</Link>
-        <span>
-          Cherche{" "}
+        <span className="flex items-center">
+          Find this
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={stickerDataUrl(detail.sticker_id)}
-            alt={getSticker(detail.sticker_id).name}
+            src={shapeDataUrl(detail.sticker_id, color)}
+            alt={getShape(detail.sticker_id).name}
             className="inline w-6 h-6 align-middle mx-1"
           />
-          <b>{getSticker(detail.sticker_id).name}</b>
         </span>
-        <span className="text-white/60">par {detail.creator_name}</span>
+        <span className="text-white/60">by {detail.creator_name}</span>
       </div>
 
       <ZoomPanViewer
@@ -184,12 +185,12 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
       <div className="px-4 flex flex-col gap-3 pb-6">
         {detail.is_creator ? (
           <p className="text-center text-white/70 text-sm">
-            C&apos;est ta cachette — le cercle montre ton sticker. Tu ne peux pas jouer dessus.
+            This is your hide — the circle marks your shape. You can&apos;t play your own.
           </p>
         ) : found ? (
           <>
             <p className="text-center text-xl font-black text-amber-300">
-              🎉 Trouvé{result?.success ? ` en ${Math.round(timeMs / 1000)}s` : ""} !
+              🎉 Found{result?.success ? ` in ${Math.round(timeMs / 1000)}s` : ""}!
             </p>
             {reveal && result?.success && (
               <RevealShare
@@ -199,24 +200,25 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
                 sizePct={reveal.size_pct}
                 rotation={reveal.rotation}
                 stickerId={detail.sticker_id}
-                headline={`Trouvé en ${Math.round(timeMs / 1000)}s !`}
-                subline={`Sticker ${getSticker(detail.sticker_id).name} débusqué 🔎`}
+                color={color}
+                headline={`Found in ${Math.round(timeMs / 1000)}s!`}
+                subline={`${getShape(detail.sticker_id).name} shape busted 🔎`}
               />
             )}
           </>
         ) : attemptsLeft === 0 ? (
           <p className="text-center text-white/80">
-            😵 Plus d&apos;essais aujourd&apos;hui.
-            {reveal ? " Le sticker était là 👆" : " Reviens demain !"}
+            😵 No attempts left today.
+            {reveal ? " The shape was here 👆" : " Come back tomorrow!"}
           </p>
         ) : (
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="text-white/70">
-                Essais restants aujourd&apos;hui :{" "}
+                Attempts left today:{" "}
                 <b className="text-white">{"●".repeat(attemptsLeft)}{"○".repeat(3 - attemptsLeft)}</b>
               </span>
-              <span className="text-white/50 text-xs">Pince pour zoomer</span>
+              <span className="text-white/50 text-xs">Pinch to zoom</span>
             </div>
             {feedback && <p className="text-center font-semibold">{feedback}</p>}
             {askName && (
@@ -226,7 +228,7 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
                 maxLength={24}
                 autoFocus
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ton pseudo pour le classement"
+                placeholder="Your nickname for the leaderboard"
                 className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2"
               />
             )}
@@ -236,30 +238,30 @@ export default function HidePage({ params }: { params: Promise<{ hideId: string 
               className="rounded-2xl bg-amber-400 text-black font-bold py-3.5 disabled:opacity-40 active:scale-95 transition"
             >
               {submitting
-                ? "Vérification…"
+                ? "Checking…"
                 : marker
                 ? askName && !name.trim()
-                  ? "Entre un pseudo pour valider"
-                  : "Valider ce tap 🎯"
-                : "Tape sur la photo pour viser"}
+                  ? "Enter a nickname to submit"
+                  : "Submit this tap 🎯"
+                : "Tap the photo to aim"}
             </button>
           </>
         )}
 
         <button
           onClick={async () => {
-            const reason = prompt("Pourquoi signaler cette cachette ?");
+            const reason = prompt("Why report this hide?");
             if (reason === null) return;
             await supabase.rpc("report_hide", {
               p_hide_id: hideId,
               p_reporter_id: getPlayerId(),
               p_reason: reason,
             });
-            alert("Merci, la cachette a été signalée.");
+            alert("Thanks, the hide has been reported.");
           }}
           className="text-xs text-white/40 underline self-center"
         >
-          🚩 Signaler cette cachette
+          🚩 Report this hide
         </button>
       </div>
     </div>
