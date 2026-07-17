@@ -12,6 +12,8 @@ type MyHide = {
   thumbnail_url: string;
   sticker_id: string;
   sticker_color: string;
+  visibility: "public" | "private";
+  code: string | null;
   expires_at: string;
   total_attempts: number;
   finds: number;
@@ -30,9 +32,11 @@ export default function CreatePage() {
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [size, setSize] = useState(8); // % of photo width
   const [rotation, setRotation] = useState(0);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
   const [publishedId, setPublishedId] = useState("");
+  const [publishedCode, setPublishedCode] = useState<string | null>(null);
 
   const color = hslToHex(hue, 65, shade);
   const photoRef = useRef<HTMLDivElement>(null);
@@ -113,15 +117,17 @@ export default function CreatePage() {
         p_pos_y: pos.y,
         p_size_pct: size,
         p_rotation: rotation,
+        p_visibility: visibility,
       });
       if (rpcErr) throw new Error(rpcErr.message);
-      const res = data as { id?: string; error?: string };
+      const res = data as { id?: string; code?: string | null; error?: string };
       if (res.error === "already_active") {
         setError("You already have an active hide! Delete it first.");
         await loadMyHide();
         return;
       }
       setPublishedId(res.id ?? "");
+      setPublishedCode(res.code ?? null);
       setPhoto(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong while publishing.");
@@ -146,6 +152,32 @@ export default function CreatePage() {
 
   // ---- publish success ----
   if (publishedId) {
+    if (publishedCode) {
+      const link = `${window.location.origin}/play/private/${publishedCode}`;
+      const pretty = `${publishedCode.slice(0, 3)} ${publishedCode.slice(3)}`;
+      return (
+        <div className="px-6 pt-14 text-center flex flex-col gap-4">
+          <h1 className="text-3xl font-black">🔒 Private hide ready!</h1>
+          <p className="text-white/70 text-sm">
+            It won&apos;t show in the public feed. Only people with this code can
+            play it. Share it in DMs or a close-friends story.
+          </p>
+          <div className="rounded-2xl bg-white/5 border border-white/10 py-5">
+            <p className="text-xs uppercase tracking-widest text-white/50">Your code</p>
+            <p className="text-4xl font-black tracking-[0.3em] mt-1">{pretty}</p>
+          </div>
+          <button
+            onClick={() => navigator.clipboard.writeText(link)}
+            className="rounded-2xl bg-amber-400 text-black font-bold py-3"
+          >
+            📋 Copy private link
+          </button>
+          <Link href={`/play/private/${publishedCode}`} className="text-violet-300 underline">
+            Open the hide
+          </Link>
+        </div>
+      );
+    }
     return (
       <div className="px-6 pt-14 text-center flex flex-col gap-4">
         <h1 className="text-3xl font-black">🎉 Hide published!</h1>
@@ -185,6 +217,7 @@ export default function CreatePage() {
           </span>
         </div>
         <div className="rounded-2xl bg-white/5 p-4 text-sm space-y-1">
+          <p>{myHide.visibility === "private" ? "🔒 Private" : "🌍 Public"}</p>
           <p>⏳ Expires in <b>{daysLeft} day{daysLeft > 1 ? "s" : ""}</b></p>
           <p>🎯 {myHide.total_attempts} attempt{myHide.total_attempts !== 1 ? "s" : ""}, {myHide.finds} find{myHide.finds !== 1 ? "s" : ""}</p>
           <p className="text-white/60">
@@ -192,6 +225,24 @@ export default function CreatePage() {
             publish a new one.
           </p>
         </div>
+        {myHide.visibility === "private" && myHide.code && (
+          <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center flex flex-col gap-2">
+            <p className="text-xs uppercase tracking-widest text-white/50">Private code</p>
+            <p className="text-3xl font-black tracking-[0.3em]">
+              {myHide.code.slice(0, 3)} {myHide.code.slice(3)}
+            </p>
+            <button
+              onClick={() =>
+                navigator.clipboard.writeText(
+                  `${window.location.origin}/play/private/${myHide.code}`
+                )
+              }
+              className="rounded-xl bg-amber-400 text-black font-bold py-2.5 text-sm"
+            >
+              📋 Copy private link
+            </button>
+          </div>
+        )}
         <button
           onClick={removeHide}
           className="rounded-2xl border border-red-400/50 text-red-300 font-semibold py-3"
@@ -303,6 +354,35 @@ export default function CreatePage() {
               className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2"
             />
           </label>
+
+          <div>
+            <p className="mb-1">Who can play?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setVisibility("public")}
+                className={`rounded-xl py-2.5 font-bold text-sm ${
+                  visibility === "public" ? "bg-amber-400 text-black" : "bg-white/5 text-white/60"
+                }`}
+              >
+                🌍 Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibility("private")}
+                className={`rounded-xl py-2.5 font-bold text-sm ${
+                  visibility === "private" ? "bg-violet-500" : "bg-white/5 text-white/60"
+                }`}
+              >
+                🔒 Friends only
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-white/50">
+              {visibility === "public"
+                ? "Shown in the public feed for everyone."
+                : "Hidden from the feed. You get a 6-digit code to share."}
+            </p>
+          </div>
         </div>
 
         {error && <p className="px-4 text-red-300 text-sm">{error}</p>}
