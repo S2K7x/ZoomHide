@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getPlayerId, getPlayerName, setPlayerName } from "@/lib/player";
-import { shapeDataUrl, getShape, DEFAULT_COLOR } from "@/lib/stickers";
+import { shapeDataUrl, getShape, DEFAULT_COLOR, HINT_COLOR } from "@/lib/stickers";
 import ZoomPanViewer from "@/components/ZoomPanViewer";
 import RevealShare from "@/components/RevealShare";
 import Avatar from "@/components/Avatar";
@@ -155,13 +155,16 @@ export default function HideGame({
           ←
         </Link>
         <div className="flex items-center gap-2 rounded-full zh-card px-3 py-1.5 text-sm">
-          <span className="text-white/60">Find</span>
+          <span className="text-white/60">Find the</span>
+          {/* silhouette neutre : on montre la FORME, jamais la couleur (l'indice
+              couleur trahirait le camouflage) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={shapeDataUrl(detail.sticker_id, color)}
+            src={shapeDataUrl(detail.sticker_id, HINT_COLOR)}
             alt={getShape(detail.sticker_id).name}
-            className="w-6 h-6"
+            className="w-5 h-5 opacity-90"
           />
+          <span className="font-semibold">{getShape(detail.sticker_id).name}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-white/60">
           <Avatar name={detail.creator_name} size={22} />

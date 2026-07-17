@@ -18,6 +18,8 @@ export const SHAPES: Shape[] = [
 ];
 
 export const DEFAULT_COLOR = "#f6c944";
+// Couleur de silhouette pour l'indice : montre la forme sans révéler la couleur.
+export const HINT_COLOR = "#d7def0";
 
 function shapeBody(id: string, color: string): string {
   const f = `fill="${color}"`;

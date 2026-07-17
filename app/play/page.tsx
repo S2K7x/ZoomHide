@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { getShape, shapeDataUrl } from "@/lib/stickers";
+import { getShape, shapeDataUrl, HINT_COLOR } from "@/lib/stickers";
 import Avatar from "@/components/Avatar";
 
 type Hide = {
@@ -109,7 +109,7 @@ export default function PlayFeed() {
                 <span className="absolute bottom-2 left-2 grid place-items-center w-8 h-8 rounded-xl bg-black/55 backdrop-blur">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={shapeDataUrl(h.sticker_id, h.sticker_color)}
+                    src={shapeDataUrl(h.sticker_id, HINT_COLOR)}
                     alt={getShape(h.sticker_id).name}
                     className="w-5 h-5"
                   />
