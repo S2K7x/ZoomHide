@@ -5,7 +5,15 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getPlayerId, getPlayerName, setPlayerName } from "@/lib/player";
 import { compressImage, compositeSticker } from "@/lib/image";
-import { SHAPES, shapeDataUrl, hslToHex } from "@/lib/stickers";
+import {
+  SHAPES,
+  shapeDataUrl,
+  hslToHex,
+  alphaHex,
+  rgbToHsl,
+  hexToRgb,
+  COLOR_PRESETS,
+} from "@/lib/stickers";
 
 type MyHide = {
   id: string;
@@ -28,7 +36,10 @@ export default function CreatePage() {
   const [photo, setPhoto] = useState<{ blob: Blob; thumb: Blob; url: string } | null>(null);
   const [shapeId, setShapeId] = useState(SHAPES[0].id);
   const [hue, setHue] = useState(48);
-  const [shade, setShade] = useState(52); // lightness
+  const [sat, setSat] = useState(75); // saturation
+  const [light, setLight] = useState(52); // lightness
+  const [alpha, setAlpha] = useState(1); // opacité
+  const [eyedrop, setEyedrop] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [size, setSize] = useState(8); // % of photo width
   const [rotation, setRotation] = useState(0);
@@ -38,9 +49,49 @@ export default function CreatePage() {
   const [publishedId, setPublishedId] = useState("");
   const [publishedCode, setPublishedCode] = useState<string | null>(null);
 
-  const color = hslToHex(hue, 65, shade);
+  const baseColor = hslToHex(hue, sat, light);
+  const color = alpha >= 1 ? baseColor : baseColor + alphaHex(alpha);
   const photoRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const sampleCanvas = useRef<HTMLCanvasElement | null>(null);
+
+  // canvas caché servant à la pipette (échantillonnage des pixels de la photo)
+  useEffect(() => {
+    if (!photo) {
+      sampleCanvas.current = null;
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement("canvas");
+      cv.width = img.naturalWidth;
+      cv.height = img.naturalHeight;
+      cv.getContext("2d")!.drawImage(img, 0, 0);
+      sampleCanvas.current = cv;
+    };
+    img.src = photo.url;
+  }, [photo]);
+
+  const applyColorFromHex = (hex: string) => {
+    const { r, g, b } = hexToRgb(hex);
+    const hsl = rgbToHsl(r, g, b);
+    setHue(hsl.h);
+    setSat(hsl.s);
+    setLight(hsl.l);
+  };
+
+  const sampleFromPhoto = (xPct: number, yPct: number) => {
+    const cv = sampleCanvas.current;
+    if (!cv) return;
+    const px = Math.min(cv.width - 1, Math.max(0, Math.floor((xPct / 100) * cv.width)));
+    const py = Math.min(cv.height - 1, Math.max(0, Math.floor((yPct / 100) * cv.height)));
+    const [r, g, b] = cv.getContext("2d")!.getImageData(px, py, 1, 1).data;
+    const hsl = rgbToHsl(r, g, b);
+    setHue(hsl.h);
+    setSat(hsl.s);
+    setLight(hsl.l);
+    setEyedrop(false);
+  };
 
   const loadMyHide = useCallback(async () => {
     setLoading(true);
@@ -153,14 +204,14 @@ export default function CreatePage() {
   // ---- publish success ----
   if (publishedId) {
     if (publishedCode) {
-      const link = `${window.location.origin}/play/private/${publishedCode}`;
+      const link = `${window.location.origin}/play/private/${publishedId}`;
       const pretty = `${publishedCode.slice(0, 3)} ${publishedCode.slice(3)}`;
       return (
         <div className="px-6 pt-14 text-center flex flex-col gap-4">
           <h1 className="text-3xl font-black">🔒 Private hide ready!</h1>
           <p className="text-white/70 text-sm">
-            It won&apos;t show in the public feed. Only people with this code can
-            play it. Share it in DMs or a close-friends story.
+            It won&apos;t show in the public feed. Friends can either type the code
+            at <b>{window.location.host}/play/private</b> or open your direct link.
           </p>
           <div className="rounded-2xl bg-white/5 border border-white/10 py-5">
             <p className="text-xs uppercase tracking-widest text-white/50">Your code</p>
@@ -170,9 +221,9 @@ export default function CreatePage() {
             onClick={() => navigator.clipboard.writeText(link)}
             className="rounded-2xl bg-amber-400 text-black font-bold py-3"
           >
-            📋 Copy private link
+            📋 Copy direct link (no code shown)
           </button>
-          <Link href={`/play/private/${publishedCode}`} className="text-violet-300 underline">
+          <Link href={`/play/private/${publishedId}`} className="text-violet-300 underline">
             Open the hide
           </Link>
         </div>
@@ -231,10 +282,13 @@ export default function CreatePage() {
             <p className="text-3xl font-black tracking-[0.3em]">
               {myHide.code.slice(0, 3)} {myHide.code.slice(3)}
             </p>
+            <p className="text-xs text-white/50">
+              Share the code (friends type it in) or the direct link below.
+            </p>
             <button
               onClick={() =>
                 navigator.clipboard.writeText(
-                  `${window.location.origin}/play/private/${myHide.code}`
+                  `${window.location.origin}/play/private/${myHide.id}`
                 )
               }
               className="rounded-xl bg-amber-400 text-black font-bold py-2.5 text-sm"
@@ -259,14 +313,24 @@ export default function CreatePage() {
       <div className="pt-4 flex flex-col gap-3">
         <h1 className="px-4 text-xl font-black">Place your shape</h1>
         <p className="px-4 text-sm text-white/60">
-          Drag the shape where it blends best. Match its color to the background.
+          {eyedrop
+            ? "🎨 Tap the photo to copy that exact color onto your shape."
+            : "Drag the shape where it blends best. Play with color, opacity and size."}
         </p>
         <div
           ref={photoRef}
-          className="relative touch-none select-none"
+          className={`relative touch-none select-none ${eyedrop ? "cursor-crosshair" : ""}`}
           onPointerMove={moveSticker}
           onPointerUp={() => (dragging.current = false)}
           onPointerCancel={() => (dragging.current = false)}
+          onPointerDown={(e) => {
+            if (!eyedrop || !photoRef.current) return;
+            const rect = photoRef.current.getBoundingClientRect();
+            sampleFromPhoto(
+              ((e.clientX - rect.left) / rect.width) * 100,
+              ((e.clientY - rect.top) / rect.height) * 100
+            );
+          }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={photo.url} alt="Your photo" className="w-full" draggable={false} />
@@ -276,6 +340,7 @@ export default function CreatePage() {
             alt="Shape"
             draggable={false}
             onPointerDown={(e) => {
+              if (eyedrop) return; // en mode pipette, on échantillonne au lieu de déplacer
               dragging.current = true;
               (e.target as Element).setPointerCapture?.(e.pointerId);
             }}
@@ -306,8 +371,47 @@ export default function CreatePage() {
         </div>
 
         <div className="px-4 space-y-3 text-sm">
+          {/* Pipette + aperçu de la couleur courante */}
+          <div className="flex items-center gap-2">
+            <span
+              className="w-9 h-9 rounded-lg border border-white/20 shrink-0"
+              style={{
+                backgroundColor: color,
+                backgroundImage:
+                  "linear-gradient(45deg,#666 25%,transparent 25%,transparent 75%,#666 75%),linear-gradient(45deg,#666 25%,#444 25%,#444 75%,#666 75%)",
+                backgroundSize: "10px 10px",
+                backgroundPosition: "0 0,5px 5px",
+              }}
+            >
+              <span className="block w-full h-full rounded-lg" style={{ backgroundColor: color }} />
+            </span>
+            <button
+              type="button"
+              onClick={() => setEyedrop((v) => !v)}
+              className={`flex-1 rounded-xl py-2.5 font-bold ${
+                eyedrop ? "bg-amber-400 text-black" : "bg-white/10 text-white/80"
+              }`}
+            >
+              🎨 {eyedrop ? "Tap the photo…" : "Pick color from photo"}
+            </button>
+          </div>
+
+          {/* Presets de camouflage */}
+          <div className="flex flex-wrap gap-2">
+            {COLOR_PRESETS.map((hex) => (
+              <button
+                key={hex}
+                type="button"
+                onClick={() => applyColorFromHex(hex)}
+                className="w-7 h-7 rounded-full border border-white/25"
+                style={{ backgroundColor: hex }}
+                title={hex}
+              />
+            ))}
+          </div>
+
           <label className="block">
-            Color
+            Hue
             <input
               type="range" min={0} max={360} step={1} value={hue}
               onChange={(e) => setHue(Number(e.target.value))}
@@ -319,13 +423,35 @@ export default function CreatePage() {
             />
           </label>
           <label className="block">
-            Shade — {shade < 25 ? "dark" : shade > 75 ? "light" : "medium"}
+            Saturation — {sat < 20 ? "muted / grey" : sat > 80 ? "vivid" : "medium"}
             <input
-              type="range" min={8} max={92} step={1} value={shade}
-              onChange={(e) => setShade(Number(e.target.value))}
+              type="range" min={0} max={100} step={1} value={sat}
+              onChange={(e) => setSat(Number(e.target.value))}
               className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, #000, ${hslToHex(hue, 65, 50)}, #fff)`,
+                background: `linear-gradient(to right, ${hslToHex(hue, 0, light)}, ${hslToHex(hue, 100, light)})`,
+              }}
+            />
+          </label>
+          <label className="block">
+            Shade — {light < 25 ? "dark" : light > 75 ? "light" : "medium"}
+            <input
+              type="range" min={5} max={95} step={1} value={light}
+              onChange={(e) => setLight(Number(e.target.value))}
+              className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, #000, ${hslToHex(hue, sat, 50)}, #fff)`,
+              }}
+            />
+          </label>
+          <label className="block">
+            Opacity — {Math.round(alpha * 100)}%
+            <input
+              type="range" min={0.15} max={1} step={0.05} value={alpha}
+              onChange={(e) => setAlpha(Number(e.target.value))}
+              className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, transparent, ${baseColor}), repeating-conic-gradient(#666 0% 25%, #444 0% 50%) 0 0 / 12px 12px`,
               }}
             />
           </label>

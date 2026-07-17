@@ -76,3 +76,59 @@ export function hslToHex(h: number, s: number, l: number): string {
       .padStart(2, "0");
   return `#${to(f(0))}${to(f(8))}${to(f(4))}`;
 }
+
+// Alpha 0-1 -> 2 hex. Une couleur < 1 devient un hex 8 chiffres (#rrggbbaa),
+// support natif en SVG fill et en canvas.
+export function alphaHex(a: number): string {
+  return Math.round(Math.max(0, Math.min(1, a)) * 255)
+    .toString(16)
+    .padStart(2, "0");
+}
+
+export function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const m = hex.replace("#", "");
+  return {
+    r: parseInt(m.slice(0, 2), 16),
+    g: parseInt(m.slice(2, 4), 16),
+    b: parseInt(m.slice(4, 6), 16),
+  };
+}
+
+// RGB -> HSL (pour la pipette et les presets : on remonte vers les sliders).
+export function rgbToHsl(
+  r: number,
+  g: number,
+  b: number
+): { h: number; s: number; l: number } {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      default:
+        h = (r - g) / d + 4;
+    }
+    h *= 60;
+  }
+  return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+// Presets utiles pour se fondre dans un décor réel (murs, bois, béton…).
+export const COLOR_PRESETS = [
+  "#f2f2f2", "#c9c9c9", "#8a8a8a", "#3f3f3f", "#141414",
+  "#d9c4a0", "#a9743f", "#6b4a2b", "#9c4b32", "#6f7043",
+  "#3f6f5a", "#2f5d8a", "#7d5aa0", "#c94f7c",
+];
