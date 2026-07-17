@@ -45,7 +45,12 @@ export default function PlayFeed() {
 
   return (
     <div className="px-4 pt-8 flex flex-col gap-4">
-      <h1 className="text-2xl font-black">🔎 Active hides</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-black">🔎 Active hides</h1>
+        <Link href="/play/private" className="text-xs text-white/50 underline">
+          🔒 Got a code?
+        </Link>
+      </div>
 
       <div className="flex gap-2 text-sm">
         {(

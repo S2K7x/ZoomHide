@@ -15,7 +15,17 @@ type MyHide = {
   expires_at: string;
   total_attempts: number;
   finds: number;
+  visibility: "public" | "private";
+  code: string | null;
 };
+
+function formatCode(code: string) {
+  return `${code.slice(0, 3)} ${code.slice(3)}`;
+}
+
+function privateLink(code: string) {
+  return `${typeof window !== "undefined" ? window.location.origin : ""}/play/private/${code}`;
+}
 
 export default function CreatePage() {
   const [loading, setLoading] = useState(true);
@@ -30,9 +40,14 @@ export default function CreatePage() {
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [size, setSize] = useState(8); // % of photo width
   const [rotation, setRotation] = useState(0);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
-  const [publishedId, setPublishedId] = useState("");
+  const [published, setPublished] = useState<{
+    id: string;
+    code: string | null;
+    visibility: "public" | "private";
+  } | null>(null);
 
   const color = hslToHex(hue, 65, shade);
   const photoRef = useRef<HTMLDivElement>(null);
@@ -113,15 +128,16 @@ export default function CreatePage() {
         p_pos_y: pos.y,
         p_size_pct: size,
         p_rotation: rotation,
+        p_visibility: visibility,
       });
       if (rpcErr) throw new Error(rpcErr.message);
-      const res = data as { id?: string; error?: string };
+      const res = data as { id?: string; code?: string; error?: string };
       if (res.error === "already_active") {
         setError("You already have an active hide! Delete it first.");
         await loadMyHide();
         return;
       }
-      setPublishedId(res.id ?? "");
+      setPublished({ id: res.id ?? "", code: res.code ?? null, visibility });
       setPhoto(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong while publishing.");
@@ -145,7 +161,32 @@ export default function CreatePage() {
   }
 
   // ---- publish success ----
-  if (publishedId) {
+  if (published) {
+    if (published.visibility === "private" && published.code) {
+      const link = privateLink(published.code);
+      return (
+        <div className="px-6 pt-14 text-center flex flex-col gap-4">
+          <h1 className="text-3xl font-black">🔒 Private hide published!</h1>
+          <p className="text-white/70">
+            It&apos;s playable for 7 days. It will never show up in the public
+            feed — only people you send this code or link to can find it.
+          </p>
+          <p className="rounded-2xl bg-white/5 py-5 text-4xl font-black tracking-[0.3em]">
+            {formatCode(published.code)}
+          </p>
+          <button
+            onClick={() => navigator.clipboard.writeText(link)}
+            className="rounded-2xl bg-amber-400 text-black font-bold py-3"
+          >
+            📋 Copy private link
+          </button>
+          <p className="text-xs text-white/40">{link}</p>
+          <Link href="/" className="text-violet-300 underline">
+            Back home
+          </Link>
+        </div>
+      );
+    }
     return (
       <div className="px-6 pt-14 text-center flex flex-col gap-4">
         <h1 className="text-3xl font-black">🎉 Hide published!</h1>
@@ -183,7 +224,24 @@ export default function CreatePage() {
             <img src={shapeDataUrl(myHide.sticker_id, myHide.sticker_color)} alt="" className="w-4 h-4" />
             hidden here
           </span>
+          {myHide.visibility === "private" && (
+            <span className="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-1 text-xs">
+              🔒 Private
+            </span>
+          )}
         </div>
+        {myHide.visibility === "private" && myHide.code && (
+          <div className="rounded-2xl bg-white/5 p-4 text-sm space-y-2">
+            <p className="text-white/60">Share this code or link — it never appears in the public feed:</p>
+            <p className="text-center text-2xl font-black tracking-[0.3em]">{formatCode(myHide.code)}</p>
+            <button
+              onClick={() => navigator.clipboard.writeText(privateLink(myHide.code!))}
+              className="w-full rounded-xl bg-amber-400 text-black font-bold py-2.5"
+            >
+              📋 Copy private link
+            </button>
+          </div>
+        )}
         <div className="rounded-2xl bg-white/5 p-4 text-sm space-y-1">
           <p>⏳ Expires in <b>{daysLeft} day{daysLeft > 1 ? "s" : ""}</b></p>
           <p>🎯 {myHide.total_attempts} attempt{myHide.total_attempts !== 1 ? "s" : ""}, {myHide.finds} find{myHide.finds !== 1 ? "s" : ""}</p>
@@ -303,6 +361,38 @@ export default function CreatePage() {
               className="mt-1 w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2"
             />
           </label>
+          <div>
+            <span className="block mb-1.5">Who can find it?</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setVisibility("public")}
+                className={`rounded-xl py-2.5 font-semibold border ${
+                  visibility === "public"
+                    ? "bg-amber-400 text-black border-amber-400"
+                    : "border-white/15 text-white/70"
+                }`}
+              >
+                🌍 Public feed
+              </button>
+              <button
+                type="button"
+                onClick={() => setVisibility("private")}
+                className={`rounded-xl py-2.5 font-semibold border ${
+                  visibility === "private"
+                    ? "bg-amber-400 text-black border-amber-400"
+                    : "border-white/15 text-white/70"
+                }`}
+              >
+                🔒 Private (code)
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-white/50">
+              {visibility === "public"
+                ? "Anyone can find it in the /play feed."
+                : "Never shown in the public feed. You'll get a 6-digit code to send yourself, in DM or a closed group."}
+            </p>
+          </div>
         </div>
 
         {error && <p className="px-4 text-red-300 text-sm">{error}</p>}

@@ -23,6 +23,13 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-17** — Cachettes privées par code à 6 chiffres (style Kahoot) :
+  toggle public/privé à la création, feed public inchangé (les cachettes
+  privées en sont exclues au niveau de la vue), résolution par code
+  rate-limitée côté serveur (10/h/IP via `request.headers`, pas de Vercel
+  Function). Demande explicite hors-cycle, implémentée en une fois (DB +
+  RPC + UI) plutôt qu'étalée sur plusieurs jours vu qu'elle formait un tout
+  cohérent.
 - **2026-07-17** — Ajout des balises Open Graph / Twitter Card + image de
   partage statique (`public/og-image.png`, générée hors-ligne, zéro compute
   serveur) pour que le lien du jeu affiche un aperçu soigné quand il est

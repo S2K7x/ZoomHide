@@ -24,6 +24,28 @@ Instagram, et pour tourner **100% gratuitement** (Vercel Hobby + Supabase Free).
 - Le re-encodage canvas supprime les métadonnées EXIF (dont la géolocalisation).
 - Bouton « Signaler » sur chaque cachette → table `reports` à reviewer à la main.
 
+### Cachettes privées par code (style Kahoot)
+
+- À la création, le joueur choisit `public` (feed) ou `private` (code à 6
+  chiffres, `000000`-`999999`, généré côté serveur dans `create_hide()`).
+- Une cachette privée n'apparaît **jamais** dans `active_hides` : la vue
+  filtre `visibility = 'public'`. Comme la table `hides` reste entièrement
+  verrouillée pour anon/authenticated (`revoke all`), il n'y a pas besoin
+  d'une policy RLS dédiée — la vue est le seul point de lecture public.
+- Résolution d'un code via `get_hide_by_code(p_code, p_player_id)`, rate-limitée
+  à **10 essais/heure/IP** (table `code_attempts`, purgée après 2h par le cron
+  horaire existant). Réponse volontairement générique (`not_found`) qu'un code
+  soit mal formé ou simplement inexistant/expiré, pour ne rien apprendre à un
+  bruteforce.
+- L'IP est récupérée **côté Postgres**, via le header transmis par PostgREST
+  (`request.headers->>'x-forwarded-for'`, fonction `request_ip_hash()`) — pas
+  besoin d'une Vercel Function pour ça. C'est un choix délibéré : un
+  identifiant fourni par le client (ex. l'UUID `localStorage`) serait trivialement
+  contournable en le faisant varier à chaque appel RPC, ce qui viderait le rate
+  limit de son sens. Limite connue : sans edge de confiance dédiée devant
+  Postgres, ce header reste un signal *best-effort* (fiable en pratique derrière
+  l'infra Supabase, mais pas une garantie cryptographique d'unicité d'IP).
+
 ## Installation
 
 ```bash
@@ -63,7 +85,11 @@ Jobs pg_cron installés :
 
 ## Gameplay
 
-- 1 cachette active max par joueur, expire après **7 jours**
+- 1 cachette active max par joueur (publique **ou** privée, jamais les deux),
+  expire après **7 jours**
+- Cachette **publique** : visible dans le feed `/play`. Cachette **privée** :
+  jamais dans le feed, accessible uniquement via un code à 6 chiffres partagé
+  par le cacheur (DM, story fermée…) sur `/play/private/[code]`
 - **3 essais par jour** et par cachette (reset quotidien)
 - Personne ne trouve en 7 jours → badge **Cachette Parfaite 💎** (+500 pts)
 - Score cacheur : 10 pts par tentative ratée provoquée + bonus parfaite
