@@ -1,0 +1,3 @@
+-- Taille minimum du sticker imposée côté serveur (anti-triche) : 6% de la
+-- largeur, plafond 40%. Voir aussi le slider min=6 côté /create.
+-- (Corps identique à la définition appliquée via MCP : clamp v_size.)

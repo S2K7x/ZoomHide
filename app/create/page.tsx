@@ -41,7 +41,7 @@ export default function CreatePage() {
   const [alpha, setAlpha] = useState(1); // opacité
   const [eyedrop, setEyedrop] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
-  const [size, setSize] = useState(8); // % of photo width
+  const [size, setSize] = useState(9); // % of photo width (min 6 enforced)
   const [rotation, setRotation] = useState(0);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [publishing, setPublishing] = useState(false);
@@ -219,7 +219,7 @@ export default function CreatePage() {
           </div>
           <button
             onClick={() => navigator.clipboard.writeText(link)}
-            className="rounded-2xl bg-amber-400 text-black font-bold py-3"
+            className="zh-btn zh-btn-primary py-3"
           >
             📋 Copy direct link (no code shown)
           </button>
@@ -238,7 +238,7 @@ export default function CreatePage() {
         </p>
         <button
           onClick={() => navigator.clipboard.writeText(window.location.origin + "/play")}
-          className="rounded-2xl bg-amber-400 text-black font-bold py-3"
+          className="zh-btn zh-btn-primary py-3"
         >
           📋 Copy game link
         </button>
@@ -291,7 +291,7 @@ export default function CreatePage() {
                   `${window.location.origin}/play/private/${myHide.id}`
                 )
               }
-              className="rounded-xl bg-amber-400 text-black font-bold py-2.5 text-sm"
+              className="zh-btn zh-btn-primary py-2.5 text-sm"
             >
               📋 Copy private link
             </button>
@@ -456,9 +456,9 @@ export default function CreatePage() {
             />
           </label>
           <label className="block">
-            Size — {size.toFixed(0)}%
+            Size — {size.toFixed(0)}%{size <= 6.5 && <span className="text-amber-300"> (min — keep it findable!)</span>}
             <input
-              type="range" min={3} max={30} step={0.5} value={size}
+              type="range" min={6} max={30} step={0.5} value={size}
               onChange={(e) => setSize(Number(e.target.value))}
               className="w-full accent-amber-400"
             />
@@ -516,14 +516,14 @@ export default function CreatePage() {
         <div className="px-4 flex gap-2 pb-4">
           <button
             onClick={() => setPhoto(null)}
-            className="flex-1 rounded-2xl border border-white/20 py-3 font-semibold"
+            className="zh-btn zh-btn-ghost flex-1 py-3.5"
           >
             ← Back
           </button>
           <button
             onClick={publish}
             disabled={publishing}
-            className="flex-[2] rounded-2xl bg-amber-400 text-black font-bold py-3 disabled:opacity-50"
+            className="zh-btn zh-btn-primary flex-[2] py-3.5"
           >
             {publishing ? "Publishing…" : "Publish hide 🚀"}
           </button>
@@ -540,7 +540,7 @@ export default function CreatePage() {
         Pick a photo from your real life: bedroom, street, desk… The busier the
         scene, the sneakier the hide.
       </p>
-      <label className="rounded-2xl bg-violet-500 text-center font-bold text-lg py-4 cursor-pointer active:scale-95 transition">
+      <label className="zh-btn zh-btn-violet text-center text-lg py-4 cursor-pointer">
         Choose a photo
         <input
           type="file"

@@ -145,7 +145,7 @@ export default function RevealShare(props: Props) {
       {ready && (
         <button
           onClick={share}
-          className="rounded-full bg-amber-400 text-black font-bold px-6 py-3 active:scale-95 transition"
+          className="zh-btn zh-btn-primary !rounded-full px-6 py-3"
         >
           Share to story 📤
         </button>

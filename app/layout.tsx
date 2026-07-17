@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
+import NavBar from "@/components/NavBar";
 import "./globals.css";
 
 const SITE_URL = "https://zoom-hide.vercel.app";
@@ -41,26 +41,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-dvh antialiased">
-        <main className="mx-auto max-w-md min-h-dvh pb-20">{children}</main>
-        <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-white/10 bg-[#1a0d2e]/95 backdrop-blur">
-          <div className="mx-auto max-w-md grid grid-cols-4 text-center text-xs">
-            {[
-              { href: "/", icon: "🏠", label: "Home" },
-              { href: "/play", icon: "🔎", label: "Find" },
-              { href: "/create", icon: "📸", label: "Hide" },
-              { href: "/leaderboard", icon: "🏆", label: "Ranking" },
-            ].map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="flex flex-col items-center gap-0.5 py-2.5 text-white/70 hover:text-white"
-              >
-                <span className="text-lg leading-none">{l.icon}</span>
-                {l.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <main className="mx-auto max-w-md min-h-dvh pb-28">{children}</main>
+        <NavBar />
       </body>
     </html>
   );

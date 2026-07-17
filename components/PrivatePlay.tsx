@@ -96,7 +96,7 @@ export default function PrivatePlay({ initialToken }: { initialToken?: string })
       <button
         onClick={go}
         disabled={code.length !== 6 || resolving}
-        className="rounded-2xl bg-amber-400 text-black font-bold py-4 disabled:opacity-40 active:scale-95 transition"
+        className="zh-btn zh-btn-primary py-4"
       >
         {resolving ? "Unlocking…" : "Unlock hide 🔓"}
       </button>

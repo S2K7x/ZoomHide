@@ -1,22 +1,86 @@
 @import "tailwindcss";
 
 :root {
-  --background: #12081f;
-  --foreground: #f2ecfa;
+  --bg-deep: #0a1024;
+  --bg-mid: #101a38;
+  --card: rgba(255, 255, 255, 0.055);
+  --card-strong: rgba(255, 255, 255, 0.08);
+  --card-border: rgba(255, 255, 255, 0.10);
+  --accent: #ffd24a;
+  --blue: #4d8dff;
+  --violet: #8b6cf0;
+  --foreground: #e9f0ff;
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --color-background: var(--bg-deep);
   --color-foreground: var(--foreground);
 }
 
 html {
-  background: var(--background);
+  background: var(--bg-deep);
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
+  min-height: 100dvh;
+  background:
+    radial-gradient(130% 90% at 50% -15%, #23366a 0%, rgba(35, 54, 106, 0) 55%),
+    radial-gradient(120% 70% at 100% 0%, rgba(139, 108, 240, 0.18) 0%, transparent 45%),
+    linear-gradient(180deg, #0d1734 0%, #0a1024 60%, #080d1e 100%);
+  background-attachment: fixed;
   font-family: system-ui, -apple-system, sans-serif;
   overscroll-behavior-y: none;
+}
+
+/* ---- Surfaces & boutons réutilisables ---- */
+.zh-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.8);
+}
+
+.zh-btn {
+  border-radius: 1.1rem;
+  font-weight: 800;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  will-change: transform;
+}
+.zh-btn:active {
+  transform: scale(0.96);
+}
+.zh-btn:disabled {
+  opacity: 0.45;
+}
+
+.zh-btn-primary {
+  background: linear-gradient(180deg, #ffe07a 0%, #f6b81e 100%);
+  color: #241800;
+  box-shadow: 0 12px 26px -10px rgba(246, 184, 30, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.zh-btn-blue {
+  background: linear-gradient(180deg, #6aa4ff 0%, #2f6fe0 100%);
+  color: #fff;
+  box-shadow: 0 12px 26px -10px rgba(59, 110, 224, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.zh-btn-violet {
+  background: linear-gradient(180deg, #a78bfa 0%, #7a55e6 100%);
+  color: #fff;
+  box-shadow: 0 12px 26px -10px rgba(122, 85, 230, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.zh-btn-ghost {
+  background: var(--card-strong);
+  border: 1px solid var(--card-border);
+  color: var(--foreground);
+}
+
+.zh-title {
+  background: linear-gradient(180deg, #ffffff 0%, #b7c6ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

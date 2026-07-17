@@ -7,6 +7,7 @@ import { getPlayerId, getPlayerName, setPlayerName } from "@/lib/player";
 import { shapeDataUrl, getShape, DEFAULT_COLOR } from "@/lib/stickers";
 import ZoomPanViewer from "@/components/ZoomPanViewer";
 import RevealShare from "@/components/RevealShare";
+import Avatar from "@/components/Avatar";
 
 type Reveal = { pos_x: number; pos_y: number; size_pct: number; rotation: number };
 
@@ -148,19 +149,24 @@ export default function HideGame({
   const gameOver = found || (attemptsLeft === 0 && result != null) || detail.is_creator;
 
   return (
-    <div className="flex flex-col gap-3 pt-3">
-      <div className="px-4 flex items-center justify-between text-sm">
-        <Link href={backHref} className="text-white/60">← {backLabel}</Link>
-        <span className="flex items-center">
-          Find this
+    <div className="flex flex-col gap-3 pt-4">
+      <div className="px-4 flex items-center justify-between">
+        <Link href={backHref} className="grid place-items-center w-9 h-9 rounded-full zh-card text-white/70">
+          ←
+        </Link>
+        <div className="flex items-center gap-2 rounded-full zh-card px-3 py-1.5 text-sm">
+          <span className="text-white/60">Find</span>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={shapeDataUrl(detail.sticker_id, color)}
             alt={getShape(detail.sticker_id).name}
-            className="inline w-6 h-6 align-middle mx-1"
+            className="w-6 h-6"
           />
-        </span>
-        <span className="text-white/60">by {detail.creator_name}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-white/60">
+          <Avatar name={detail.creator_name} size={22} />
+          <span className="max-w-[4.5rem] truncate">{detail.creator_name}</span>
+        </div>
       </div>
 
       <ZoomPanViewer
@@ -244,7 +250,7 @@ export default function HideGame({
             <button
               onClick={submitAttempt}
               disabled={!marker || submitting || (askName && !name.trim())}
-              className="rounded-2xl bg-amber-400 text-black font-bold py-3.5 disabled:opacity-40 active:scale-95 transition"
+              className="zh-btn zh-btn-primary py-3.5"
             >
               {submitting
                 ? "Checking…"

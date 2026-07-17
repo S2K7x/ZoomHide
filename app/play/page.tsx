@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getShape, shapeDataUrl } from "@/lib/stickers";
+import Avatar from "@/components/Avatar";
 
 type Hide = {
   id: string;
@@ -46,10 +47,10 @@ export default function PlayFeed() {
   return (
     <div className="px-4 pt-8 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-black">🔎 Active hides</h1>
+        <h1 className="text-2xl font-black">Active hides</h1>
         <Link
           href="/play/private"
-          className="rounded-full border border-white/20 px-3 py-1.5 text-xs text-white/70"
+          className="zh-btn zh-btn-ghost px-3.5 py-2 text-xs"
         >
           🔒 Have a code?
         </Link>
@@ -60,16 +61,16 @@ export default function PlayFeed() {
           [
             ["recent", "Newest"],
             ["hardest", "Hardest"],
-            ["expiring", "Expiring soon"],
+            ["expiring", "Expiring"],
           ] as [Sort, string][]
         ).map(([k, label]) => (
           <button
             key={k}
             onClick={() => setSort(k)}
-            className={`rounded-full px-3.5 py-1.5 border ${
+            className={`rounded-full px-3.5 py-1.5 border transition ${
               sort === k
-                ? "bg-amber-400 text-black border-amber-400 font-bold"
-                : "border-white/20 text-white/70"
+                ? "bg-gradient-to-b from-amber-300 to-amber-500 text-black border-amber-400 font-bold"
+                : "border-white/15 text-white/60"
             }`}
           >
             {label}
@@ -78,11 +79,11 @@ export default function PlayFeed() {
       </div>
 
       {loading ? (
-        <p className="text-center text-white/60 py-10">Loading…</p>
+        <p className="text-center text-white/55 py-16">Loading…</p>
       ) : hides.length === 0 ? (
-        <div className="text-center py-10 text-white/60">
+        <div className="zh-card text-center py-10 px-6 text-white/60 flex flex-col gap-2">
           <p>No active hides yet.</p>
-          <Link href="/create" className="text-violet-300 underline">
+          <Link href="/create" className="text-amber-300 font-semibold underline">
             Be the first to hide one!
           </Link>
         </div>
@@ -92,7 +93,7 @@ export default function PlayFeed() {
             <Link
               key={h.id}
               href={`/play/${h.id}`}
-              className="rounded-2xl overflow-hidden bg-white/5 border border-white/10 active:scale-95 transition"
+              className="zh-card overflow-hidden active:scale-[0.97] transition"
             >
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -102,10 +103,10 @@ export default function PlayFeed() {
                   className="w-full aspect-square object-cover"
                   loading="lazy"
                 />
-                <span className="absolute top-1.5 right-1.5 rounded-full bg-black/60 text-[11px] px-2 py-0.5">
+                <span className="absolute top-2 right-2 rounded-full bg-black/55 backdrop-blur text-[11px] font-semibold px-2 py-0.5">
                   ⏳ {timeLeft(h.expires_at)}
                 </span>
-                <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 p-1">
+                <span className="absolute bottom-2 left-2 grid place-items-center w-8 h-8 rounded-xl bg-black/55 backdrop-blur">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shapeDataUrl(h.sticker_id, h.sticker_color)}
@@ -113,14 +114,22 @@ export default function PlayFeed() {
                     className="w-5 h-5"
                   />
                 </span>
+                {h.fail_pct != null && h.fail_pct >= 60 && (
+                  <span className="absolute top-2 left-2 rounded-full bg-gradient-to-b from-rose-400 to-rose-600 text-[10px] font-black px-2 py-0.5">
+                    🔥 HARD
+                  </span>
+                )}
               </div>
-              <div className="p-2 text-xs">
-                <p className="font-semibold truncate">{h.creator_name}</p>
-                <p className="text-white/60">
-                  {h.total_attempts === 0
-                    ? "No one has tried yet"
-                    : `${h.fail_pct}% fail · ${h.finds} found`}
-                </p>
+              <div className="p-2.5 flex items-center gap-2">
+                <Avatar name={h.creator_name} size={26} />
+                <div className="min-w-0 text-xs">
+                  <p className="font-semibold truncate">{h.creator_name}</p>
+                  <p className="text-white/45">
+                    {h.total_attempts === 0
+                      ? "Not tried yet"
+                      : `${h.fail_pct}% fail · ${h.finds} found`}
+                  </p>
+                </div>
               </div>
             </Link>
           ))}
