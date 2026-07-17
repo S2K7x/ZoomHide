@@ -79,14 +79,6 @@ export function hslToHex(h: number, s: number, l: number): string {
   return `#${to(f(0))}${to(f(8))}${to(f(4))}`;
 }
 
-// Alpha 0-1 -> 2 hex. Une couleur < 1 devient un hex 8 chiffres (#rrggbbaa),
-// support natif en SVG fill et en canvas.
-export function alphaHex(a: number): string {
-  return Math.round(Math.max(0, Math.min(1, a)) * 255)
-    .toString(16)
-    .padStart(2, "0");
-}
-
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const m = hex.replace("#", "");
   return {

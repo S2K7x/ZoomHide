@@ -9,7 +9,6 @@ import {
   SHAPES,
   shapeDataUrl,
   hslToHex,
-  alphaHex,
   rgbToHsl,
   hexToRgb,
   COLOR_PRESETS,
@@ -38,7 +37,6 @@ export default function CreatePage() {
   const [hue, setHue] = useState(48);
   const [sat, setSat] = useState(75); // saturation
   const [light, setLight] = useState(52); // lightness
-  const [alpha, setAlpha] = useState(1); // opacité
   const [eyedrop, setEyedrop] = useState(false);
   const [pos, setPos] = useState({ x: 50, y: 50 });
   const [size, setSize] = useState(9); // % of photo width (min 6 enforced)
@@ -49,8 +47,9 @@ export default function CreatePage() {
   const [publishedId, setPublishedId] = useState("");
   const [publishedCode, setPublishedCode] = useState<string | null>(null);
 
-  const baseColor = hslToHex(hue, sat, light);
-  const color = alpha >= 1 ? baseColor : baseColor + alphaHex(alpha);
+  // Toujours pleinement opaque : le sticker doit rester visible à l'oeil nu,
+  // seule sa couleur/forme peut le camoufler — pas sa transparence.
+  const color = hslToHex(hue, sat, light);
   const photoRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const sampleCanvas = useRef<HTMLCanvasElement | null>(null);
@@ -315,7 +314,7 @@ export default function CreatePage() {
         <p className="px-4 text-sm text-white/60">
           {eyedrop
             ? "🎨 Tap the photo to copy that exact color onto your shape."
-            : "Drag the shape where it blends best. Play with color, opacity and size."}
+            : "Drag the shape where it blends best. Play with color and size."}
         </p>
         <div
           ref={photoRef}
@@ -441,17 +440,6 @@ export default function CreatePage() {
               className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
               style={{
                 background: `linear-gradient(to right, #000, ${hslToHex(hue, sat, 50)}, #fff)`,
-              }}
-            />
-          </label>
-          <label className="block">
-            Opacity — {Math.round(alpha * 100)}%
-            <input
-              type="range" min={0.15} max={1} step={0.05} value={alpha}
-              onChange={(e) => setAlpha(Number(e.target.value))}
-              className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, transparent, ${baseColor}), repeating-conic-gradient(#666 0% 25%, #444 0% 50%) 0 0 / 12px 12px`,
               }}
             />
           </label>
