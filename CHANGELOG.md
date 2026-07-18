@@ -2,6 +2,28 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-18
+
+**Ajout : badge « déjà tenté » / « déjà trouvé » sur le feed.**
+
+- `supabase/migrations/008_hide_status_batch.sql` : nouvelle RPC
+  `get_hide_statuses(p_hide_ids uuid[], p_player_id text)`, security definer,
+  qui renvoie un objet JSON `{hide_id: "attempted" | "found"}` limité aux
+  cachettes où le joueur a au moins une tentative (les autres sont simplement
+  absentes de la réponse). Aucune position exposée, un seul appel groupé par
+  chargement du feed (pas une requête par carte).
+- `app/play/page.tsx` : appel de cette RPC juste après le chargement du feed
+  (avec les ids déjà récupérés), affichage d'un badge ✅ Found / 👀 Tried en
+  bas à droite de chaque carte.
+
+Pourquoi : évite au joueur de perdre du temps à retaper une cachette déjà
+jouée ou déjà trouvée, surtout utile avec la limite de 3 tentatives/jour.
+Impact quotas : un seul appel RPC par visite du feed (max 60 ids), coût de
+calcul négligeable (jointure indexée sur `attempts(hide_id, player_id)`),
+aucun changement de schéma de table. Sécurité inchangée : RLS toujours
+strict sur `hides`/`attempts`, la position réelle n'est jamais renvoyée par
+cette fonction.
+
 ## 2026-07-17
 
 **Ajout : aperçu de partage (Open Graph / Twitter Card).**

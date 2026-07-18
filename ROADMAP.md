@@ -5,11 +5,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 
 ## Backlog
 
-- Feed : afficher un badge « déjà tenté » / « déjà trouvé » sur les cachettes
-  du feed pour le joueur courant (évite de perdre du temps sur une cachette
-  déjà jouée). Nécessite une nouvelle RPC légère (batch status), à concevoir
-  pour ne pas alourdir le feed (actuellement une seule requête sur la vue
-  `active_hides`).
 - Partage : remplacer le `prompt()`/`alert()` natifs du bouton « Signaler »
   par une petite modale in-app (meilleure UX mobile, cohérente avec le reste
   du design).
@@ -23,6 +18,10 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-18** — Badge « déjà tenté » / « déjà trouvé » sur les cartes du
+  feed public, via une nouvelle RPC légère `get_hide_statuses` (batch, un
+  seul appel pour toute la page, ne renvoie que les ids où le joueur a une
+  tentative — jamais de position).
 - **2026-07-17** — Ajout des balises Open Graph / Twitter Card + image de
   partage statique (`public/og-image.png`, générée hors-ligne, zéro compute
   serveur) pour que le lien du jeu affiche un aperçu soigné quand il est
