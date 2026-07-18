@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getShape, shapeDataUrl, HINT_COLOR } from "@/lib/stickers";
+import { getPlayerId } from "@/lib/player";
 import Avatar from "@/components/Avatar";
 
 type Hide = {
@@ -23,6 +24,7 @@ type Sort = "recent" | "hardest" | "expiring";
 
 export default function PlayFeed() {
   const [hides, setHides] = useState<Hide[]>([]);
+  const [statuses, setStatuses] = useState<Record<string, "attempted" | "found">>({});
   const [sort, setSort] = useState<Sort>("recent");
   const [loading, setLoading] = useState(true);
 
@@ -34,8 +36,19 @@ export default function PlayFeed() {
       if (sort === "hardest") q = q.order("fail_pct", { ascending: false, nullsFirst: false });
       if (sort === "expiring") q = q.order("expires_at", { ascending: true });
       const { data } = await q.limit(60);
-      setHides((data as Hide[]) ?? []);
+      const list = (data as Hide[]) ?? [];
+      setHides(list);
       setLoading(false);
+
+      if (list.length > 0) {
+        const { data: statusData } = await supabase.rpc("get_hide_statuses", {
+          p_hide_ids: list.map((h) => h.id),
+          p_player_id: getPlayerId(),
+        });
+        setStatuses((statusData as Record<string, "attempted" | "found">) ?? {});
+      } else {
+        setStatuses({});
+      }
     })();
   }, [sort]);
 
@@ -119,6 +132,15 @@ export default function PlayFeed() {
                     🔥 HARD
                   </span>
                 )}
+                {statuses[h.id] === "found" ? (
+                  <span className="absolute bottom-2 right-2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600 text-[10px] font-black px-2 py-0.5">
+                    ✅ Found
+                  </span>
+                ) : statuses[h.id] === "attempted" ? (
+                  <span className="absolute bottom-2 right-2 rounded-full bg-black/55 backdrop-blur text-[10px] font-semibold px-2 py-0.5">
+                    👀 Tried
+                  </span>
+                ) : null}
               </div>
               <div className="p-2.5 flex items-center gap-2">
                 <Avatar name={h.creator_name} size={26} />
