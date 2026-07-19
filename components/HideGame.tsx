@@ -63,6 +63,10 @@ export default function HideGame({
   const [name, setName] = useState("");
   const [timeMs, setTimeMs] = useState(0);
   const startTime = useRef(Date.now());
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
 
   const reveal: Reveal | null = result?.reveal ?? detail?.reveal ?? null;
   const found = result?.success || detail?.already_found;
@@ -267,21 +271,78 @@ export default function HideGame({
         )}
 
         <button
-          onClick={async () => {
-            const reason = prompt("Why report this hide?");
-            if (reason === null) return;
-            await supabase.rpc("report_hide", {
-              p_hide_id: hideId,
-              p_reporter_id: getPlayerId(),
-              p_reason: reason,
-            });
-            alert("Thanks, the hide has been reported.");
-          }}
+          onClick={() => setShowReport(true)}
           className="text-xs text-white/40 underline self-center"
         >
           🚩 Report this hide
         </button>
       </div>
+
+      {showReport && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-6"
+          onClick={() => !reportSubmitting && setShowReport(false)}
+        >
+          <div
+            className="zh-card w-full max-w-sm p-5 flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {reportDone ? (
+              <>
+                <p className="text-center font-semibold">Thanks, the hide has been reported.</p>
+                <button
+                  onClick={() => {
+                    setShowReport(false);
+                    setReportDone(false);
+                    setReportReason("");
+                  }}
+                  className="zh-btn zh-btn-primary py-2.5"
+                >
+                  Close
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold">Why report this hide?</p>
+                <textarea
+                  value={reportReason}
+                  maxLength={280}
+                  autoFocus
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="Inappropriate photo, unclear shape, etc."
+                  rows={3}
+                  className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-sm resize-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowReport(false)}
+                    disabled={reportSubmitting}
+                    className="zh-btn zh-btn-ghost flex-1 py-2.5"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setReportSubmitting(true);
+                      await supabase.rpc("report_hide", {
+                        p_hide_id: hideId,
+                        p_reporter_id: getPlayerId(),
+                        p_reason: reportReason,
+                      });
+                      setReportSubmitting(false);
+                      setReportDone(true);
+                    }}
+                    disabled={reportSubmitting || !reportReason.trim()}
+                    className="zh-btn zh-btn-primary flex-1 py-2.5"
+                  >
+                    {reportSubmitting ? "Sending…" : "Send"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

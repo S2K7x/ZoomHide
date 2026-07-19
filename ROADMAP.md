@@ -5,9 +5,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 
 ## Backlog
 
-- Partage : remplacer le `prompt()`/`alert()` natifs du bouton « Signaler »
-  par une petite modale in-app (meilleure UX mobile, cohérente avec le reste
-  du design).
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
@@ -18,6 +15,9 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-19** — Remplacement du `prompt()`/`alert()` natifs du bouton
+  « Signaler » par une petite modale in-app (`HideGame.tsx`), cohérente avec
+  le reste du design (`zh-card`/`zh-btn`).
 - **2026-07-18** — Badge « déjà tenté » / « déjà trouvé » sur les cartes du
   feed public, via une nouvelle RPC légère `get_hide_statuses` (batch, un
   seul appel pour toute la page, ne renvoie que les ids où le joueur a une

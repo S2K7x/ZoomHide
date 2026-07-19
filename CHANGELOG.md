@@ -2,6 +2,25 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-19
+
+**UX : modale in-app pour « Signaler cette cachette » au lieu de `prompt()`/`alert()`.**
+
+- `components/HideGame.tsx` : le bouton « 🚩 Report this hide » ouvre
+  désormais une petite modale (overlay + carte `zh-card`, cohérente avec le
+  reste du design) au lieu du `window.prompt()`/`window.alert()` natifs du
+  navigateur. Le joueur saisit son motif dans un `<textarea>`, avec un état
+  d'envoi et un message de confirmation dans la modale elle-même. Annulable
+  en cliquant en dehors ou sur « Cancel ».
+
+Pourquoi : les popups natifs `prompt`/`alert` sont bloquants, mal stylés,
+et offrent une mauvaise expérience sur mobile (notamment iOS Safari où ils
+peuvent être discrets ou tronqués). Une modale in-app est plus lisible et
+cohérente avec le reste de l'UI. Changement purement front (aucun nouvel
+appel RPC, la fonction `report_hide` existante est réutilisée telle quelle) :
+aucun impact sur la sécurité, les règles de jeu, ou les quotas
+Supabase/Vercel.
+
 ## 2026-07-18
 
 **Ajout : badge « déjà tenté » / « déjà trouvé » sur le feed.**
