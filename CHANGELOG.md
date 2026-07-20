@@ -2,6 +2,27 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-20
+
+**Gameplay : repères visuels des tentatives ratées sur la photo.**
+
+- `components/HideGame.tsx` : chaque tentative ratée est maintenant marquée
+  sur la photo par un petit anneau coloré (rouge = très proche, orange =
+  chaud, jaune = tiède, bleu = froid), basé sur la `distance` déjà renvoyée
+  par `try_attempt`. Un court texte d'aide apparaît sous le feedback dès la
+  première tentative ratée. L'historique est gardé en mémoire côté client
+  pour la session de jeu en cours (reset à chaque chargement/nouvelle
+  cachette) — aucune tentative n'est modifiée ou re-stockée en base.
+
+Pourquoi : avec seulement 3 tentatives/jour/cachette, un joueur oubliait
+souvent où il avait déjà tapé et retapait une zone déjà écartée. Ce repère
+aide à raisonner spatialement sans changer les règles du jeu (toujours 3
+tentatives, calcul de succès inchangé, aucune position exposée avant la
+victoire). Changement 100% front, aucune nouvelle RPC ni colonne : zéro
+impact sur les quotas Supabase/Vercel, et aucun changement de sécurité (le
+serveur reste seul à connaître la position réelle tant que la cachette
+n'est pas trouvée).
+
 ## 2026-07-19
 
 **UX : modale in-app pour « Signaler cette cachette » au lieu de `prompt()`/`alert()`.**
