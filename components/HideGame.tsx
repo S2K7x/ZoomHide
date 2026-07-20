@@ -10,6 +10,7 @@ import RevealShare from "@/components/RevealShare";
 import Avatar from "@/components/Avatar";
 
 type Reveal = { pos_x: number; pos_y: number; size_pct: number; rotation: number };
+type PastAttempt = { x: number; y: number; distance: number };
 
 type Detail = {
   id: string;
@@ -67,6 +68,7 @@ export default function HideGame({
   const [reportReason, setReportReason] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportDone, setReportDone] = useState(false);
+  const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
 
   const reveal: Reveal | null = result?.reveal ?? detail?.reveal ?? null;
   const found = result?.success || detail?.already_found;
@@ -88,6 +90,7 @@ export default function HideGame({
       return;
     }
     setDetail(d);
+    setPastAttempts([]);
     startTime.current = Date.now();
   }, [hideId]);
 
@@ -126,7 +129,6 @@ export default function HideGame({
       return;
     }
     setResult(r);
-    setMarker(null);
     setTimeMs(elapsed);
     if (!r.success) {
       const d = r.distance ?? 100;
@@ -135,8 +137,19 @@ export default function HideGame({
         d < 18 ? "♨️ Hot, getting warmer." :
         d < 35 ? "🌤️ Lukewarm." : "🧊 Cold, look elsewhere."
       );
+      setPastAttempts((prev) => [...prev, { x: marker.x, y: marker.y, distance: d }]);
     }
+    setMarker(null);
   };
+
+  // Couleur du repère selon la distance renvoyée par le serveur à cette
+  // tentative — aide le joueur à mémoriser les zones déjà écartées sans
+  // jamais révéler la position exacte.
+  const heatColor = (d: number) =>
+    d < 8 ? "border-rose-400 bg-rose-400/25" :
+    d < 18 ? "border-orange-400 bg-orange-400/20" :
+    d < 35 ? "border-yellow-300 bg-yellow-300/15" :
+    "border-sky-400 bg-sky-400/15";
 
   if (loadError) {
     return (
@@ -183,6 +196,13 @@ export default function HideGame({
           if (!gameOver && attemptsLeft > 0) setMarker({ x, y });
         }}
       >
+        {pastAttempts.map((a, i) => (
+          <div
+            key={i}
+            className={`absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 ${heatColor(a.distance)}`}
+            style={{ left: `${a.x}%`, top: `${a.y}%` }}
+          />
+        ))}
         {marker && (
           <div
             className="absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 border-amber-400 bg-amber-400/20"
@@ -243,6 +263,11 @@ export default function HideGame({
               <span className="text-white/50 text-xs">Pinch to zoom</span>
             </div>
             {feedback && <p className="text-center font-semibold">{feedback}</p>}
+            {pastAttempts.length > 0 && (
+              <p className="text-center text-xs text-white/40">
+                Colored rings mark your past taps — 🧊 blue is cold, 🔥 red is close.
+              </p>
+            )}
             {askName && (
               <input
                 type="text"
