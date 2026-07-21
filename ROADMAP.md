@@ -8,9 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Countdown « reset dans Xh » quand `attempts_left === 0`, au lieu du texte
-  générique « come back tomorrow » (petit calcul côté client sur minuit UTC,
-  pas de nouvelle RPC).
 - Bouton de rafraîchissement manuel sur le feed `/play` (au cas où le tri ou
   les nouvelles cachettes ne remontent pas assez vite en usage réel).
 
@@ -20,6 +17,10 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-21** — Countdown « reset dans Xh Ym » affiché à la place du texte
+  générique « come back tomorrow » quand `attempts_left === 0`
+  (`components/HideGame.tsx`), calculé côté client sur minuit UTC (aligné sur
+  `current_date` côté serveur), aucune nouvelle RPC.
 - **2026-07-20** — Repères visuels des tentatives ratées précédentes sur la
   photo pendant la partie (`components/HideGame.tsx`), pour aider le joueur
   à mémoriser les zones déjà écartées entre ses 3 tentatives/jour.

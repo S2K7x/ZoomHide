@@ -35,6 +35,28 @@ type AttemptResult = {
   error?: string;
 };
 
+// Les tentatives se réinitialisent à minuit UTC côté serveur (`current_date`
+// dans try_attempt/get_hide_detail). On calcule juste le temps restant côté
+// client pour l'affichage, aucune nouvelle RPC.
+function useResetCountdown(active: boolean) {
+  const [label, setLabel] = useState("");
+  useEffect(() => {
+    if (!active) return;
+    const update = () => {
+      const now = new Date();
+      const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+      const diffMin = Math.max(0, Math.round((next - now.getTime()) / 60000));
+      const h = Math.floor(diffMin / 60);
+      const m = diffMin % 60;
+      setLabel(h > 0 ? `${h}h ${m}m` : `${m}m`);
+    };
+    update();
+    const id = setInterval(update, 30000);
+    return () => clearInterval(id);
+  }, [active]);
+  return label;
+}
+
 const ERRORS: Record<string, string> = {
   not_active: "This hide is no longer active.",
   own_hide: "This is your own hide 😄",
@@ -74,6 +96,7 @@ export default function HideGame({
   const found = result?.success || detail?.already_found;
   const attemptsLeft = result?.attempts_left ?? detail?.attempts_left ?? 0;
   const color = detail?.sticker_color ?? DEFAULT_COLOR;
+  const resetLabel = useResetCountdown(!!detail && !detail.is_creator && !found && attemptsLeft === 0);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_hide_detail", {
@@ -251,7 +274,11 @@ export default function HideGame({
         ) : attemptsLeft === 0 ? (
           <p className="text-center text-white/80">
             😵 No attempts left today.
-            {reveal ? " The shape was here 👆" : " Come back tomorrow!"}
+            {reveal
+              ? " The shape was here 👆"
+              : resetLabel
+              ? ` Reset in ${resetLabel}.`
+              : " Come back tomorrow!"}
           </p>
         ) : (
           <>
