@@ -2,6 +2,26 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-21
+
+**UX : countdown « reset dans Xh Ym » quand les tentatives du jour sont épuisées.**
+
+- `components/HideGame.tsx` : nouveau hook `useResetCountdown`, qui calcule
+  côté client le temps restant jusqu'à minuit UTC (rafraîchi toutes les 30s,
+  actif uniquement quand `attempts_left === 0` et que le joueur n'a pas
+  trouvé/n'est pas le créateur). Le message « No attempts left today » affiche
+  désormais « Reset in Xh Ym. » au lieu du texte générique « Come back
+  tomorrow! » (ce dernier reste utilisé en repli si le calcul n'a pas encore
+  tourné, ou si le sticker est révélé après le dernier essai raté).
+
+Pourquoi : la limite de 3 tentatives/jour/cachette se réinitialise à minuit
+UTC (`current_date` dans les RPC `try_attempt`/`get_hide_detail`), mais le
+joueur n'avait aucune indication du délai réel avant de pouvoir retenter —
+« demain » est vague selon l'heure et le fuseau du joueur. Changement 100%
+front (un `setInterval` léger, aucun nouvel appel réseau), aucune règle de
+jeu modifiée (toujours 3 tentatives/jour, calcul de succès et position
+toujours côté serveur), aucun impact sur les quotas Supabase/Vercel.
+
 ## 2026-07-20
 
 **Gameplay : repères visuels des tentatives ratées sur la photo.**
