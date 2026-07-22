@@ -8,8 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Bouton de rafraîchissement manuel sur le feed `/play` (au cas où le tri ou
-  les nouvelles cachettes ne remontent pas assez vite en usage réel).
 
 ## En cours
 
@@ -17,6 +15,11 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-22** — Bouton de rafraîchissement manuel sur le feed `/play`
+  (`app/play/page.tsx`), à côté du titre, avec icône 🔄 animée pendant le
+  chargement, indépendant du spinner de chargement initial (état
+  `refreshing` séparé). Réutilise le fetch existant (`active_hides` +
+  `get_hide_statuses`), aucune nouvelle requête ni RPC.
 - **2026-07-21** — Countdown « reset dans Xh Ym » affiché à la place du texte
   générique « come back tomorrow » quand `attempts_left === 0`
   (`components/HideGame.tsx`), calculé côté client sur minuit UTC (aligné sur

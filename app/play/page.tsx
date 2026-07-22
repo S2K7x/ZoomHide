@@ -27,29 +27,36 @@ export default function PlayFeed() {
   const [statuses, setStatuses] = useState<Record<string, "attempted" | "found">>({});
   const [sort, setSort] = useState<Sort>("recent");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchHides = async (opts?: { isManual?: boolean }) => {
+    if (opts?.isManual) setRefreshing(true);
+    else setLoading(true);
+
+    let q = supabase.from("active_hides").select("*");
+    if (sort === "recent") q = q.order("created_at", { ascending: false });
+    if (sort === "hardest") q = q.order("fail_pct", { ascending: false, nullsFirst: false });
+    if (sort === "expiring") q = q.order("expires_at", { ascending: true });
+    const { data } = await q.limit(60);
+    const list = (data as Hide[]) ?? [];
+    setHides(list);
+    setLoading(false);
+
+    if (list.length > 0) {
+      const { data: statusData } = await supabase.rpc("get_hide_statuses", {
+        p_hide_ids: list.map((h) => h.id),
+        p_player_id: getPlayerId(),
+      });
+      setStatuses((statusData as Record<string, "attempted" | "found">) ?? {});
+    } else {
+      setStatuses({});
+    }
+    if (opts?.isManual) setRefreshing(false);
+  };
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      let q = supabase.from("active_hides").select("*");
-      if (sort === "recent") q = q.order("created_at", { ascending: false });
-      if (sort === "hardest") q = q.order("fail_pct", { ascending: false, nullsFirst: false });
-      if (sort === "expiring") q = q.order("expires_at", { ascending: true });
-      const { data } = await q.limit(60);
-      const list = (data as Hide[]) ?? [];
-      setHides(list);
-      setLoading(false);
-
-      if (list.length > 0) {
-        const { data: statusData } = await supabase.rpc("get_hide_statuses", {
-          p_hide_ids: list.map((h) => h.id),
-          p_player_id: getPlayerId(),
-        });
-        setStatuses((statusData as Record<string, "attempted" | "found">) ?? {});
-      } else {
-        setStatuses({});
-      }
-    })();
+    fetchHides();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort]);
 
   const timeLeft = (iso: string) => {
@@ -59,14 +66,26 @@ export default function PlayFeed() {
 
   return (
     <div className="px-4 pt-8 flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-black">Active hides</h1>
-        <Link
-          href="/play/private"
-          className="zh-btn zh-btn-ghost px-3.5 py-2 text-xs"
-        >
-          🔒 Have a code?
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => fetchHides({ isManual: true })}
+            disabled={loading || refreshing}
+            aria-label="Refresh feed"
+            className="zh-btn zh-btn-ghost px-3 py-2 text-xs disabled:opacity-50"
+          >
+            <span className={refreshing ? "inline-block animate-spin" : "inline-block"}>
+              🔄
+            </span>
+          </button>
+          <Link
+            href="/play/private"
+            className="zh-btn zh-btn-ghost px-3.5 py-2 text-xs"
+          >
+            🔒 Have a code?
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-2 text-sm">
