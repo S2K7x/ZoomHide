@@ -2,6 +2,27 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-22
+
+**UX : bouton de rafraîchissement manuel sur le feed `/play`.**
+
+- `app/play/page.tsx` : extraction de la logique de chargement du feed
+  (requête `active_hides` + RPC `get_hide_statuses`) dans une fonction
+  `fetchHides`, réutilisée par le `useEffect` initial et par un nouveau
+  bouton 🔄 placé à côté du titre « Active hides ». Le bouton utilise un état
+  `refreshing` distinct du `loading` initial, pour ne pas vider/masquer la
+  grille pendant un rafraîchissement manuel (juste une icône qui tourne,
+  bouton désactivé le temps de la requête).
+
+Pourquoi : le feed ne se recharge qu'au montage de la page ou au changement
+de tri ; un joueur qui reste dessus (ou qui vient de créer/retenter une
+cachette dans un autre onglet) n'a aucun moyen de revoir l'état à jour sans
+recharger toute la page. Changement 100% front : réutilise exactement les
+mêmes appels réseau existants (pas de nouvelle requête, pas de nouvelle RPC),
+donc aucun impact sur les quotas Supabase/Vercel. Aucune règle de jeu ni
+sécurité touchée (le calcul de succès et la position du sticker restent
+côté serveur, RLS inchangé).
+
 ## 2026-07-21
 
 **UX : countdown « reset dans Xh Ym » quand les tentatives du jour sont épuisées.**
