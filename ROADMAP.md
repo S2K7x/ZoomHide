@@ -8,6 +8,11 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
+- UX : squelette de chargement (skeleton) sur `/leaderboard` (podium + liste),
+  même idée que le feed `/play`, pour un chargement moins abrupt.
+- Perf : lazy-load / pagination du feed `/play` au-delà des 60 premières
+  cachettes si le nombre de cachettes actives grandit, pour éviter de
+  transférer une grosse page inutile sur mobile.
 
 ## En cours
 
@@ -15,6 +20,9 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-23** — Squelette de chargement (skeleton cards) sur le feed
+  `/play` (`app/play/page.tsx`), affiché à la place du texte « Loading… »
+  pendant le premier chargement, pour un rendu moins abrupt sur mobile.
 - **2026-07-22** — Bouton de rafraîchissement manuel sur le feed `/play`
   (`app/play/page.tsx`), à côté du titre, avec icône 🔄 animée pendant le
   chargement, indépendant du spinner de chargement initial (état
