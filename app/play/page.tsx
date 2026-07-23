@@ -111,7 +111,20 @@ export default function PlayFeed() {
       </div>
 
       {loading ? (
-        <p className="text-center text-white/55 py-16">Loading…</p>
+        <div className="grid grid-cols-2 gap-3" aria-label="Loading hides">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="zh-card overflow-hidden animate-pulse">
+              <div className="w-full aspect-square bg-white/10" />
+              <div className="p-2.5 flex items-center gap-2">
+                <div className="w-[26px] h-[26px] rounded-full bg-white/10 shrink-0" />
+                <div className="flex-1 flex flex-col gap-1.5 py-0.5">
+                  <div className="h-2.5 w-3/5 rounded bg-white/10" />
+                  <div className="h-2 w-4/5 rounded bg-white/10" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : hides.length === 0 ? (
         <div className="zh-card text-center py-10 px-6 text-white/60 flex flex-col gap-2">
           <p>No active hides yet.</p>

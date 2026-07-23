@@ -2,6 +2,25 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-23
+
+**UX : squelette de chargement (skeleton) sur le feed `/play`.**
+
+- `app/play/page.tsx` : remplacement du texte « Loading… » par une grille de
+  6 cartes squelette (`animate-pulse`, mêmes proportions que les vraies
+  cartes : vignette carrée, avatar rond, deux lignes de texte) affichée
+  pendant le premier chargement du feed (`loading === true`). Le
+  rafraîchissement manuel (bouton 🔄, état `refreshing`) est inchangé et ne
+  déclenche pas ce squelette, pour ne pas vider la grille existante.
+
+Pourquoi : le feed public est la première chose vue en arrivant sur `/play`,
+et un simple texte centré crée un flash de contenu vide peu engageant sur
+mobile, en particulier sur connexion lente. Le squelette donne un repère
+visuel immédiat de la mise en page à venir. Changement 100% front (CSS/JSX
+uniquement, aucune nouvelle requête ni RPC) : zéro impact sur les quotas
+Supabase/Vercel, aucune règle de jeu ni sécurité touchée (calcul de succès
+et position du sticker toujours côté serveur, RLS inchangé).
+
 ## 2026-07-22
 
 **UX : bouton de rafraîchissement manuel sur le feed `/play`.**
