@@ -106,7 +106,37 @@ export default function LeaderboardPage() {
       </div>
 
       {loading ? (
-        <p className="text-center text-white/55 py-16">Loading…</p>
+        <div aria-label="Loading leaderboard">
+          {/* Podium skeleton */}
+          <div className="grid grid-cols-3 items-end gap-2 pt-2">
+            {["h-20", "h-28", "h-16"].map((h, i) => (
+              <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
+                <div className="w-[52px] h-[52px] rounded-full bg-white/10" />
+                <div className="h-2.5 w-14 rounded bg-white/10" />
+                <div className="h-2.5 w-6 rounded bg-white/10" />
+                <div className={`w-full ${h} rounded-t-2xl bg-white/10`} />
+              </div>
+            ))}
+          </div>
+
+          {/* List skeleton */}
+          <ol className="flex flex-col gap-2 mt-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <li
+                key={i}
+                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-white/10 bg-white/5 animate-pulse"
+              >
+                <div className="w-6 h-2.5 rounded bg-white/10" />
+                <div className="w-[38px] h-[38px] rounded-full bg-white/10 shrink-0" />
+                <div className="flex-1 flex flex-col gap-1.5 py-0.5">
+                  <div className="h-2.5 w-2/5 rounded bg-white/10" />
+                  <div className="h-2 w-1/3 rounded bg-white/10" />
+                </div>
+                <div className="h-2.5 w-6 rounded bg-white/10" />
+              </li>
+            ))}
+          </ol>
+        </div>
       ) : rows.length === 0 ? (
         <div className="zh-card p-8 text-center text-white/60">
           No one on the board yet. Go play!
