@@ -2,6 +2,26 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-24
+
+**UX : squelette de chargement (skeleton) sur `/leaderboard`.**
+
+- `app/leaderboard/page.tsx` : remplacement du texte « Loading… » par un
+  squelette (`animate-pulse`) qui reprend la forme réelle du contenu — 3
+  blocs de podium (avatar rond, nom, score, colonne de hauteur variable) et
+  5 lignes de classement (rang, avatar, nom, score) — affiché pendant le
+  chargement initial et à chaque changement de filtre (board/period).
+
+Pourquoi : même constat que pour le feed `/play` la veille — un texte centré
+« Loading… » crée un flash de contenu vide à chaque changement de filtre
+(Top Hiders/Seekers, This week/All-time), qui recharge systématiquement les
+données. Le squelette donne un repère visuel immédiat de la mise en page
+(podium + liste) et rend les changements de filtre moins abrupts. Changement
+100% front (CSS/JSX uniquement, aucune nouvelle requête ni RPC) : zéro
+impact sur les quotas Supabase/Vercel, aucune règle de jeu ni sécurité
+touchée (calcul de score toujours via `get_leaderboard` côté serveur, RLS
+inchangé).
+
 ## 2026-07-23
 
 **UX : squelette de chargement (skeleton) sur le feed `/play`.**
