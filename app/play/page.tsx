@@ -22,24 +22,32 @@ type Hide = {
 
 type Sort = "recent" | "hardest" | "expiring";
 
+const PAGE_SIZE = 20;
+
 export default function PlayFeed() {
   const [hides, setHides] = useState<Hide[]>([]);
   const [statuses, setStatuses] = useState<Record<string, "attempted" | "found">>({});
   const [sort, setSort] = useState<Sort>("recent");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchHides = async (opts?: { isManual?: boolean }) => {
-    if (opts?.isManual) setRefreshing(true);
+  const fetchHides = async (opts?: { isManual?: boolean; loadMore?: boolean }) => {
+    const offset = opts?.loadMore ? hides.length : 0;
+    if (opts?.loadMore) setLoadingMore(true);
+    else if (opts?.isManual) setRefreshing(true);
     else setLoading(true);
 
     let q = supabase.from("active_hides").select("*");
     if (sort === "recent") q = q.order("created_at", { ascending: false });
     if (sort === "hardest") q = q.order("fail_pct", { ascending: false, nullsFirst: false });
     if (sort === "expiring") q = q.order("expires_at", { ascending: true });
-    const { data } = await q.limit(60);
+    q = q.order("id", { ascending: true }).range(offset, offset + PAGE_SIZE - 1);
+    const { data } = await q;
     const list = (data as Hide[]) ?? [];
-    setHides(list);
+    setHides((prev) => (opts?.loadMore ? [...prev, ...list] : list));
+    setHasMore(list.length === PAGE_SIZE);
     setLoading(false);
 
     if (list.length > 0) {
@@ -47,11 +55,15 @@ export default function PlayFeed() {
         p_hide_ids: list.map((h) => h.id),
         p_player_id: getPlayerId(),
       });
-      setStatuses((statusData as Record<string, "attempted" | "found">) ?? {});
-    } else {
+      setStatuses((prev) => ({
+        ...(opts?.loadMore ? prev : {}),
+        ...((statusData as Record<string, "attempted" | "found">) ?? {}),
+      }));
+    } else if (!opts?.loadMore) {
       setStatuses({});
     }
     if (opts?.isManual) setRefreshing(false);
+    if (opts?.loadMore) setLoadingMore(false);
   };
 
   useEffect(() => {
@@ -188,6 +200,16 @@ export default function PlayFeed() {
             </Link>
           ))}
         </div>
+      )}
+
+      {!loading && hides.length > 0 && hasMore && (
+        <button
+          onClick={() => fetchHides({ loadMore: true })}
+          disabled={loadingMore}
+          className="zh-btn zh-btn-ghost py-2.5 text-sm disabled:opacity-50"
+        >
+          {loadingMore ? "Loading…" : "Load more"}
+        </button>
       )}
     </div>
   );

@@ -8,9 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Perf : lazy-load / pagination du feed `/play` au-delà des 60 premières
-  cachettes si le nombre de cachettes actives grandit, pour éviter de
-  transférer une grosse page inutile sur mobile.
 
 ## En cours
 
@@ -18,6 +15,9 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-25** — Pagination du feed `/play` : chargement par pages de 20
+  cachettes (au lieu de 60 d'un coup) avec bouton « Load more » en bas de la
+  grille, au lieu d'une limite fixe de 60 résultats.
 - **2026-07-24** — Squelette de chargement (skeleton) sur `/leaderboard`
   (`app/leaderboard/page.tsx`), reprenant la forme du podium (3 blocs) et de
   la liste (5 lignes) à la place du texte « Loading… », même idée que le
