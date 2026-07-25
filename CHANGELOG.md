@@ -2,6 +2,31 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-25
+
+**Perf : pagination du feed `/play` (chargement par pages de 20).**
+
+- `app/play/page.tsx` : remplacement du `limit(60)` fixe par un chargement
+  paginé via `.range()`, page de `PAGE_SIZE = 20` cachettes. Un bouton
+  « Load more » apparaît sous la grille tant qu'une page pleine a été
+  reçue (`hasMore`), avec un état de chargement séparé (`loadingMore`) qui
+  n'affecte ni le squelette initial ni le rafraîchissement manuel. Un tri
+  secondaire par `id` a été ajouté à la requête pour stabiliser l'ordre des
+  pages (évite les doublons/sauts si une nouvelle cachette est créée entre
+  deux chargements). Le changement de tri (Newest/Hardest/Expiring) et le
+  rafraîchissement manuel repartent bien de la première page.
+
+Pourquoi : le feed chargeait jusqu'à 60 cachettes (avec vignettes) dès
+l'arrivée sur `/play`, même quand seules les premières étaient visibles à
+l'écran — inutile sur mobile, en particulier sur connexion lente. La
+pagination réduit le transfert initial (20 vignettes au lieu de 60) tout en
+gardant l'accès au reste du feed via un geste explicite. Changement 100%
+front, aucune nouvelle RPC ni migration (la vue `active_hides` existante
+supporte déjà `.range()`), donc pas d'impact sur les quotas Supabase/Vercel.
+Aucune règle de jeu ni sécurité touchée (RLS et calcul serveur inchangés).
+Item retiré du backlog dans `ROADMAP.md` (dernier item de code du backlog,
+il ne reste que le rappel de suivi manuel des quotas).
+
 ## 2026-07-24
 
 **UX : squelette de chargement (skeleton) sur `/leaderboard`.**
