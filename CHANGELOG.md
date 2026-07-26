@@ -2,6 +2,34 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-26
+
+**UX : bouton de partage direct sur l'écran de jeu (`🔗 Share this hide`).**
+
+- `components/HideGame.tsx` : nouveau bouton à côté de « 🚩 Report this
+  hide », qui partage l'URL de la cachette actuellement affichée. Utilise
+  `navigator.share` (feuille de partage native) quand disponible — sinon
+  copie l'URL dans le presse-papier via `navigator.clipboard`, avec un
+  texte de confirmation « ✅ Link copied! » affiché 1.5s à la place du
+  libellé du bouton. Aucun échec silencieux bloquant si le presse-papier
+  n'est pas accessible (contexte non sécurisé, permission refusée).
+
+Pourquoi : jusqu'ici, le seul moyen de partager le lien d'une cachette
+précise était la barre d'URL du navigateur, ou l'écran de publication vu
+une seule fois par le créateur juste après avoir créé sa cachette
+(`app/create/page.tsx`). Un joueur qui tombe sur une cachette difficile
+depuis le feed public, ou qui veut défier un ami sur la cachette privée
+qu'il est en train de jouer, n'avait aucun bouton dédié pour ça. Changement
+100% front (réutilise `window.location.href`, aucune nouvelle requête ni
+RPC) : zéro impact sur les quotas Supabase/Vercel. Aucune règle de jeu ni
+sécurité touchée — le lien partagé est déjà celui affiché dans la barre
+d'adresse du joueur, aucune position de sticker ni donnée serveur
+supplémentaire n'est exposée.
+
+Backlog complété avec 3 nouvelles idées (feedback « Copié ! » sur les
+boutons existants de `/create`, filtre « masquer déjà tenté/trouvé » sur le
+feed, retour haptique léger sur tentative) pour les prochaines exécutions.
+
 ## 2026-07-25
 
 **Perf : pagination du feed `/play` (chargement par pages de 20).**

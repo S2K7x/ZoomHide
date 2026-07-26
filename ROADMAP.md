@@ -8,6 +8,17 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
+- UX : feedback visuel « Copié ! » sur les boutons de copie de lien déjà
+  existants dans `/create` (code privé, lien public, lien direct) — ils
+  copient silencieusement dans le presse-papier sans confirmation à
+  l'écran, contrairement au nouveau bouton de partage ajouté aujourd'hui.
+- Gameplay : filtre « Masquer déjà tenté/trouvé » sur le feed `/play`, en
+  plus des badges existants, pour que les joueurs réguliers voient d'abord
+  les cachettes fraîches (calcul 100% front à partir de `statuses`, déjà
+  chargé, aucune nouvelle requête).
+- UX mobile : léger retour haptique (`navigator.vibrate`) sur tentative
+  trouvée/ratée dans `HideGame.tsx`, avec repli silencieux sur les
+  navigateurs qui ne le supportent pas — aucune dépendance, API native.
 
 ## En cours
 
@@ -15,6 +26,11 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-26** — Bouton « 🔗 Share this hide » sur l'écran de jeu
+  (`components/HideGame.tsx`), à côté de « 🚩 Report this hide ». Utilise
+  `navigator.share` si disponible (mobile), sinon copie le lien de la
+  cachette courante dans le presse-papier avec confirmation « ✅ Link
+  copied! » pendant 1.5s.
 - **2026-07-25** — Pagination du feed `/play` : chargement par pages de 20
   cachettes (au lieu de 60 d'un coup) avec bouton « Load more » en bas de la
   grille, au lieu d'une limite fixe de 60 résultats.

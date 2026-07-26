@@ -91,6 +91,7 @@ export default function HideGame({
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportDone, setReportDone] = useState(false);
   const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const reveal: Reveal | null = result?.reveal ?? detail?.reveal ?? null;
   const found = result?.success || detail?.already_found;
@@ -163,6 +164,29 @@ export default function HideGame({
       setPastAttempts((prev) => [...prev, { x: marker.x, y: marker.y, distance: d }]);
     }
     setMarker(null);
+  };
+
+  // Partage le lien de CETTE cachette (utile pour défier des amis sur le
+  // même hide) — juste l'URL courante, aucune donnée serveur en plus.
+  const shareHide = async () => {
+    if (!detail || typeof window === "undefined") return;
+    const url = window.location.href;
+    const shapeName = getShape(detail.sticker_id).name;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Zoom Hide", text: `Can you find the ${shapeName}?`, url });
+        return;
+      } catch {
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1500);
+    } catch {
+      // ignore, pas de fallback bloquant
+    }
   };
 
   // Couleur du repère selon la distance renvoyée par le serveur à cette
@@ -322,12 +346,17 @@ export default function HideGame({
           </>
         )}
 
-        <button
-          onClick={() => setShowReport(true)}
-          className="text-xs text-white/40 underline self-center"
-        >
-          🚩 Report this hide
-        </button>
+        <div className="flex items-center justify-center gap-4">
+          <button onClick={shareHide} className="text-xs text-white/40 underline">
+            {linkCopied ? "✅ Link copied!" : "🔗 Share this hide"}
+          </button>
+          <button
+            onClick={() => setShowReport(true)}
+            className="text-xs text-white/40 underline"
+          >
+            🚩 Report this hide
+          </button>
+        </div>
       </div>
 
       {showReport && (
