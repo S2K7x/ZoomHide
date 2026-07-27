@@ -2,6 +2,30 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-27
+
+**UX : feedback visuel « Copié ! » sur les boutons de copie de lien de `/create`.**
+
+- `app/create/page.tsx` : nouvel état `copiedKey` et helper `copyLink(key, text)`
+  partagés par les 3 boutons de copie existants — « Copy direct link (no code
+  shown) » (cachette privée fraîchement publiée), « Copy game link »
+  (cachette publique fraîchement publiée), et « Copy private link »
+  (cachette privée déjà active). Chaque bouton affiche « ✅ Copied! » à la
+  place de son libellé pendant 1.5s après le clic, avant de revenir à son
+  texte normal.
+
+Pourquoi : ces boutons copiaient déjà silencieusement le lien dans le
+presse-papier via `navigator.clipboard`, sans aucune confirmation visuelle —
+contrairement au bouton de partage ajouté hier sur l'écran de jeu
+(`HideGame.tsx`), qui affiche « ✅ Link copied! ». Un joueur qui clique sans
+retour ne sait pas si l'action a fonctionné et reclique parfois plusieurs
+fois. Changement 100% front, réutilise le même pattern (`setTimeout` +
+état local) déjà en place : aucune nouvelle requête ni RPC, zéro impact sur
+les quotas Supabase/Vercel, aucune règle de jeu ni sécurité touchée.
+Dernier item de code du backlog retiré dans `ROADMAP.md` (il reste le
+filtre « déjà tenté/trouvé » sur le feed, le retour haptique mobile, et le
+rappel de suivi manuel des quotas).
+
 ## 2026-07-26
 
 **UX : bouton de partage direct sur l'écran de jeu (`🔗 Share this hide`).**
