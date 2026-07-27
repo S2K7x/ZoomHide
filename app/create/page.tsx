@@ -46,6 +46,17 @@ export default function CreatePage() {
   const [error, setError] = useState("");
   const [publishedId, setPublishedId] = useState("");
   const [publishedCode, setPublishedCode] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyLink = async (key: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
+    } catch {
+      // ignore, pas de fallback bloquant
+    }
+  };
 
   // Toujours pleinement opaque : le sticker doit rester visible à l'oeil nu,
   // seule sa couleur/forme peut le camoufler — pas sa transparence.
@@ -217,10 +228,10 @@ export default function CreatePage() {
             <p className="text-4xl font-black tracking-[0.3em] mt-1">{pretty}</p>
           </div>
           <button
-            onClick={() => navigator.clipboard.writeText(link)}
+            onClick={() => copyLink("direct", link)}
             className="zh-btn zh-btn-primary py-3"
           >
-            📋 Copy direct link (no code shown)
+            {copiedKey === "direct" ? "✅ Copied!" : "📋 Copy direct link (no code shown)"}
           </button>
           <Link href={`/play/private/${publishedId}`} className="text-violet-300 underline">
             Open the hide
@@ -236,10 +247,10 @@ export default function CreatePage() {
           followers can hunt for it.
         </p>
         <button
-          onClick={() => navigator.clipboard.writeText(window.location.origin + "/play")}
+          onClick={() => copyLink("game", window.location.origin + "/play")}
           className="zh-btn zh-btn-primary py-3"
         >
-          📋 Copy game link
+          {copiedKey === "game" ? "✅ Copied!" : "📋 Copy game link"}
         </button>
         <Link href="/play" className="text-violet-300 underline">
           See the hide feed
@@ -286,13 +297,11 @@ export default function CreatePage() {
             </p>
             <button
               onClick={() =>
-                navigator.clipboard.writeText(
-                  `${window.location.origin}/play/private/${myHide.id}`
-                )
+                copyLink("private", `${window.location.origin}/play/private/${myHide.id}`)
               }
               className="zh-btn zh-btn-primary py-2.5 text-sm"
             >
-              📋 Copy private link
+              {copiedKey === "private" ? "✅ Copied!" : "📋 Copy private link"}
             </button>
           </div>
         )}
