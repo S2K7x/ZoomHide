@@ -32,6 +32,7 @@ export default function PlayFeed() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [hideDone, setHideDone] = useState(false);
 
   const fetchHides = async (opts?: { isManual?: boolean; loadMore?: boolean }) => {
     const offset = opts?.loadMore ? hides.length : 0;
@@ -71,6 +72,20 @@ export default function PlayFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort]);
 
+  useEffect(() => {
+    setHideDone(localStorage.getItem("zh_hide_done") === "1");
+  }, []);
+
+  const toggleHideDone = () => {
+    setHideDone((prev) => {
+      const next = !prev;
+      localStorage.setItem("zh_hide_done", next ? "1" : "0");
+      return next;
+    });
+  };
+
+  const visibleHides = hideDone ? hides.filter((h) => !statuses[h.id]) : hides;
+
   const timeLeft = (iso: string) => {
     const h = Math.max(0, (new Date(iso).getTime() - Date.now()) / 3600000);
     return h >= 24 ? `${Math.ceil(h / 24)}d` : `${Math.ceil(h)}h`;
@@ -100,7 +115,7 @@ export default function PlayFeed() {
         </div>
       </div>
 
-      <div className="flex gap-2 text-sm">
+      <div className="flex gap-2 text-sm flex-wrap">
         {(
           [
             ["recent", "Newest"],
@@ -120,6 +135,17 @@ export default function PlayFeed() {
             {label}
           </button>
         ))}
+        <button
+          onClick={toggleHideDone}
+          aria-pressed={hideDone}
+          className={`rounded-full px-3.5 py-1.5 border transition ${
+            hideDone
+              ? "bg-gradient-to-b from-amber-300 to-amber-500 text-black border-amber-400 font-bold"
+              : "border-white/15 text-white/60"
+          }`}
+        >
+          🙈 Hide tried/found
+        </button>
       </div>
 
       {loading ? (
@@ -144,9 +170,19 @@ export default function PlayFeed() {
             Be the first to hide one!
           </Link>
         </div>
+      ) : visibleHides.length === 0 ? (
+        <div className="zh-card text-center py-10 px-6 text-white/60 flex flex-col gap-2">
+          <p>No fresh hides on this page — you&apos;ve tried or found them all.</p>
+          <button
+            onClick={toggleHideDone}
+            className="text-amber-300 font-semibold underline"
+          >
+            Show them anyway
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {hides.map((h) => (
+          {visibleHides.map((h) => (
             <Link
               key={h.id}
               href={`/play/${h.id}`}

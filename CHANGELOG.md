@@ -2,6 +2,37 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-28
+
+**Gameplay : filtre « Hide tried/found » sur le feed `/play`.**
+
+- `app/play/page.tsx` : nouveau bouton toggle « 🙈 Hide tried/found » à côté
+  des tris existants (Newest/Hardest/Expiring). Quand activé, masque de
+  l'affichage les cachettes déjà marquées `attempted` ou `found` par le
+  joueur courant — calcul 100% côté client à partir de `statuses`, déjà
+  chargé via la RPC `get_hide_statuses` existante (aucune nouvelle requête
+  ni RPC). Préférence retenue en `localStorage` (`zh_hide_done`) pour
+  persister entre les visites. Quand le filtre ne laisse aucune cachette
+  visible sur la page courante, un message dédié invite à le désactiver au
+  lieu d'afficher une grille vide silencieuse.
+
+Pourquoi : les badges ✅ Found / 👀 Tried (ajoutés le 2026-07-18) signalent
+déjà les cachettes déjà jouées, mais un joueur régulier avec beaucoup
+d'historique doit quand même les parcourir visuellement pour trouver les
+cachettes fraîches. Ce filtre, dernier item de code du backlog, permet de
+les masquer directement. Changement 100% front, aucune nouvelle requête ni
+RPC, zéro impact sur les quotas Supabase/Vercel. Aucune règle de jeu ni
+sécurité touchée (le filtrage n'affecte que ce qui est déjà chargé côté
+client ; le calcul de succès et la position du sticker restent
+exclusivement côté serveur). Le filtre s'applique uniquement à la page
+courante du feed paginé (il ne déclenche pas de chargement supplémentaire
+pour « remplir » la grille si beaucoup de cachettes sont masquées) —
+comportement acceptable vu la taille des pages (20) et signalé plutôt que
+caché, via le message dédié.
+
+Backlog : il ne reste que le retour haptique mobile (`navigator.vibrate`)
+comme item de code, et le rappel de suivi manuel des quotas Supabase.
+
 ## 2026-07-27
 
 **UX : feedback visuel « Copié ! » sur les boutons de copie de lien de `/create`.**
