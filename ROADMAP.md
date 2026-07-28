@@ -8,10 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Gameplay : filtre « Masquer déjà tenté/trouvé » sur le feed `/play`, en
-  plus des badges existants, pour que les joueurs réguliers voient d'abord
-  les cachettes fraîches (calcul 100% front à partir de `statuses`, déjà
-  chargé, aucune nouvelle requête).
 - UX mobile : léger retour haptique (`navigator.vibrate`) sur tentative
   trouvée/ratée dans `HideGame.tsx`, avec repli silencieux sur les
   navigateurs qui ne le supportent pas — aucune dépendance, API native.
@@ -22,6 +18,12 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-28** — Filtre « 🙈 Hide tried/found » sur le feed `/play`, à
+  côté des tris existants (Newest/Hardest/Expiring). Masque côté client les
+  cachettes déjà marquées `attempted`/`found` (déjà chargées via
+  `get_hide_statuses`, aucune nouvelle requête), préférence retenue en
+  `localStorage`. Message dédié + bouton pour désactiver le filtre quand
+  toutes les cachettes de la page courante sont filtrées.
 - **2026-07-27** — Feedback visuel « ✅ Copied! » sur les 3 boutons de
   copie de lien de `app/create/page.tsx` (lien direct de cachette privée,
   lien du jeu après publication publique, lien privé de la cachette
