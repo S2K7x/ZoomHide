@@ -2,6 +2,31 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-29
+
+**UX mobile : retour haptique léger sur tentative trouvée/ratée.**
+
+- `components/HideGame.tsx` : nouveau helper `vibrate(pattern)` qui appelle
+  `navigator.vibrate` s'il existe (vérification de présence + `try/catch`,
+  totalement silencieux sinon — notamment sur iOS Safari, qui n'implémente
+  pas cette API). Appelé dans `submitAttempt` juste après réception du
+  résultat serveur : double vibration courte (`[15, 60, 15]`) sur succès,
+  vibration brève (`20`) sur échec.
+
+Pourquoi : dernier item de code du backlog. Avec seulement 3 tentatives/jour
+et beaucoup de jeu au pouce sur mobile (pincer/zoomer puis taper), un léger
+retour physique confirme immédiatement le résultat sans devoir lire le texte
+de feedback affiché juste en dessous. Changement 100% front, API native du
+navigateur (`Vibration API`), aucune dépendance ajoutée, aucune nouvelle
+requête ni RPC : zéro impact sur les quotas Supabase/Vercel. Aucune règle de
+jeu ni sécurité touchée (le résultat vibré est celui déjà renvoyé par
+`try_attempt` côté serveur, rien n'est calculé côté client).
+
+Backlog : vidé de son dernier item de code, complété avec 3 nouvelles idées
+(labels d'accessibilité sur les boutons icône-seule, respect de
+`prefers-reduced-motion` sur les squelettes/halo, mise en avant du joueur
+courant sur le leaderboard) pour les prochaines exécutions.
+
 ## 2026-07-28
 
 **Gameplay : filtre « Hide tried/found » sur le feed `/play`.**

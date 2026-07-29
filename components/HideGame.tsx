@@ -57,6 +57,19 @@ function useResetCountdown(active: boolean) {
   return label;
 }
 
+// Retour haptique léger sur mobile (Android Chrome — pas d'API équivalente sur
+// iOS Safari, `navigator.vibrate` y est simplement absent). Repli silencieux
+// si l'API n'existe pas ou lève une exception (permission, contexte, etc.).
+function vibrate(pattern: number | number[]) {
+  if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(pattern);
+    } catch {
+      // ignore, aucun repli nécessaire
+    }
+  }
+}
+
 const ERRORS: Record<string, string> = {
   not_active: "This hide is no longer active.",
   own_hide: "This is your own hide 😄",
@@ -154,7 +167,9 @@ export default function HideGame({
     }
     setResult(r);
     setTimeMs(elapsed);
-    if (!r.success) {
+    if (r.success) {
+      vibrate([15, 60, 15]);
+    } else {
       const d = r.distance ?? 100;
       setFeedback(
         d < 8 ? "🔥 Burning! So close…" :
@@ -162,6 +177,7 @@ export default function HideGame({
         d < 35 ? "🌤️ Lukewarm." : "🧊 Cold, look elsewhere."
       );
       setPastAttempts((prev) => [...prev, { x: marker.x, y: marker.y, distance: d }]);
+      vibrate(20);
     }
     setMarker(null);
   };
