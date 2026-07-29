@@ -8,9 +8,17 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- UX mobile : léger retour haptique (`navigator.vibrate`) sur tentative
-  trouvée/ratée dans `HideGame.tsx`, avec repli silencieux sur les
-  navigateurs qui ne le supportent pas — aucune dépendance, API native.
+- Accessibilité : `aria-label` sur les boutons icône-seule (🔄 refresh sur
+  `/play`, 🔗 Share/🚩 Report sur `HideGame.tsx`) pour les lecteurs d'écran —
+  changement purement front, aucune dépendance.
+- Accessibilité/perf : respecter `prefers-reduced-motion` pour les squelettes
+  `animate-pulse` (`/play`, `/leaderboard`) et le halo `animate-pulse` du
+  cercle de révélation dans `HideGame.tsx` — juste du CSS conditionnel,
+  aucune nouvelle requête.
+- UX : mettre en avant la ligne du joueur courant sur `/leaderboard` (fond
+  légèrement teinté) quand il apparaît dans la liste chargée, pour la
+  repérer plus vite — comparaison client sur `getPlayerId()`, aucune
+  nouvelle RPC.
 
 ## En cours
 
@@ -18,6 +26,11 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-29** — Léger retour haptique (`navigator.vibrate`) sur tentative
+  trouvée/ratée dans `components/HideGame.tsx` (double vibration courte sur
+  succès, simple vibration brève sur échec). API native, aucune dépendance,
+  repli totalement silencieux (try/catch + vérification de présence de
+  l'API) sur les navigateurs qui ne la supportent pas, notamment iOS Safari.
 - **2026-07-28** — Filtre « 🙈 Hide tried/found » sur le feed `/play`, à
   côté des tris existants (Newest/Hardest/Expiring). Masque côté client les
   cachettes déjà marquées `attempted`/`found` (déjà chargées via
