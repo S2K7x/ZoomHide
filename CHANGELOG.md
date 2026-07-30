@@ -2,6 +2,28 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-30
+
+**Accessibilité : `aria-label` manquant sur les swatches de couleur de `/create`.**
+
+- `app/create/page.tsx` : les boutons de presets de camouflage
+  (`COLOR_PRESETS`, ronds de couleur unie sans aucun texte ni `alt`)
+  n'avaient qu'un attribut `title={hex}` comme nom accessible — peu ou pas
+  lu par les lecteurs d'écran tactiles (VoiceOver/TalkBack n'affichent pas
+  de tooltip au clic). Ajout de `aria-label={"Use color " + hex}` sur
+  chacun de ces boutons.
+
+Pourquoi : c'était le premier item de code du backlog (aria-labels sur les
+boutons icône-seule). Un audit complet des `<button>` de `app/` et
+`components/` a montré que les boutons initialement visés par cet item
+(🔄 refresh sur `/play`, 🔗 Share/🚩 Report sur `HideGame.tsx`) avaient déjà
+un nom accessible (aria-label existant ou texte visible) lors d'une
+précédente exécution ; les swatches de couleur de `/create` étaient le seul
+vrai bouton icône-seule (ici couleur-seule) sans nom accessible fiable dans
+toute l'app. Changement 100% front, une seule ligne ajoutée par bouton,
+aucune dépendance, aucune nouvelle requête, `npm run build` passe. Aucune
+règle de jeu ni sécurité touchée.
+
 ## 2026-07-29
 
 **UX mobile : retour haptique léger sur tentative trouvée/ratée.**

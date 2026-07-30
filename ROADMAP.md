@@ -8,9 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Accessibilité : `aria-label` sur les boutons icône-seule (🔄 refresh sur
-  `/play`, 🔗 Share/🚩 Report sur `HideGame.tsx`) pour les lecteurs d'écran —
-  changement purement front, aucune dépendance.
 - Accessibilité/perf : respecter `prefers-reduced-motion` pour les squelettes
   `animate-pulse` (`/play`, `/leaderboard`) et le halo `animate-pulse` du
   cercle de révélation dans `HideGame.tsx` — juste du CSS conditionnel,
@@ -26,6 +23,13 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-30** — Audit d'accessibilité des boutons icône-seule et ajout du
+  `aria-label` manquant sur les swatches de couleur préréglées de
+  `app/create/page.tsx` (`COLOR_PRESETS`, ex. « Use color #3f6f5a »). Les
+  boutons visés à l'origine par l'item de backlog (🔄 refresh sur `/play`,
+  🔗 Share/🚩 Report sur `HideGame.tsx`) avaient déjà un nom accessible
+  (aria-label existant ou texte visible) ; seuls ces swatches n'exposaient
+  qu'un attribut `title`, peu fiable pour les lecteurs d'écran tactiles.
 - **2026-07-29** — Léger retour haptique (`navigator.vibrate`) sur tentative
   trouvée/ratée dans `components/HideGame.tsx` (double vibration courte sur
   succès, simple vibration brève sur échec). API native, aucune dépendance,

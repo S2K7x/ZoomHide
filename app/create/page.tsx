@@ -414,6 +414,7 @@ export default function CreatePage() {
                 className="w-7 h-7 rounded-full border border-white/25"
                 style={{ backgroundColor: hex }}
                 title={hex}
+                aria-label={`Use color ${hex}`}
               />
             ))}
           </div>
