@@ -8,10 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Accessibilité/perf : respecter `prefers-reduced-motion` pour les squelettes
-  `animate-pulse` (`/play`, `/leaderboard`) et le halo `animate-pulse` du
-  cercle de révélation dans `HideGame.tsx` — juste du CSS conditionnel,
-  aucune nouvelle requête.
 - UX : mettre en avant la ligne du joueur courant sur `/leaderboard` (fond
   légèrement teinté) quand il apparaît dans la liste chargée, pour la
   repérer plus vite — comparaison client sur `getPlayerId()`, aucune
@@ -23,6 +19,10 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-07-31** — Respect de `prefers-reduced-motion` pour toutes les
+  animations `animate-pulse` (squelettes de `/play` et `/leaderboard`, halo
+  du cercle de révélation dans `HideGame.tsx`) via une seule règle CSS
+  globale dans `app/globals.css`.
 - **2026-07-30** — Audit d'accessibilité des boutons icône-seule et ajout du
   `aria-label` manquant sur les swatches de couleur préréglées de
   `app/create/page.tsx` (`COLOR_PRESETS`, ex. « Use color #3f6f5a »). Les
