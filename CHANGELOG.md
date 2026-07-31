@@ -2,6 +2,31 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-07-31
+
+**Accessibilité : respect de `prefers-reduced-motion` sur les animations `animate-pulse`.**
+
+- `app/globals.css` : ajout d'une règle `@media (prefers-reduced-motion: reduce) { .animate-pulse { animation: none; } }`.
+  Couvre en un seul endroit les 3 usages existants de la classe utilitaire
+  Tailwind `animate-pulse` dans l'app : les squelettes de chargement de
+  `app/play/page.tsx` et `app/leaderboard/page.tsx` (ajoutés les 2026-07-23
+  et 2026-07-24), et le halo pulsant du cercle de révélation dans
+  `components/HideGame.tsx` affiché quand un joueur trouve la cachette.
+
+Pourquoi : c'était le prochain item de code du backlog. Les animations de
+pulsation continue peuvent gêner ou provoquer un inconfort chez les joueurs
+sensibles au mouvement (vestibular disorders), qui expriment cette
+préférence via le paramètre système `prefers-reduced-motion`. Une seule
+règle CSS globale ciblant la classe utilitaire suffit à couvrir tous les
+usages actuels et futurs de `animate-pulse`, sans toucher aux composants
+eux-mêmes. Changement 100% front (CSS uniquement), aucune nouvelle requête
+ni dépendance, zéro impact sur les quotas Supabase/Vercel. Aucune règle de
+jeu ni sécurité touchée.
+
+Backlog : il ne reste que la mise en avant du joueur courant sur le
+leaderboard comme item de code, et le rappel de suivi manuel des quotas
+Supabase.
+
 ## 2026-07-30
 
 **Accessibilité : `aria-label` manquant sur les swatches de couleur de `/create`.**

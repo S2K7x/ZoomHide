@@ -84,3 +84,9 @@ body {
   background-clip: text;
   color: transparent;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+}
