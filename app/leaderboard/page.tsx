@@ -20,22 +20,32 @@ export default function LeaderboardPage() {
   const [period, setPeriod] = useState<"week" | "all">("week");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [me, setMe] = useState("");
 
   useEffect(() => {
     setMe(getPlayerId());
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase.rpc("get_leaderboard", {
-        p_board: board,
-        p_period: period,
-      });
-      setRows((data as Row[]) ?? []);
+  const fetchBoard = async () => {
+    setLoading(true);
+    const { data, error: fetchError } = await supabase.rpc("get_leaderboard", {
+      p_board: board,
+      p_period: period,
+    });
+    if (fetchError) {
+      setError(true);
       setLoading(false);
-    })();
+      return;
+    }
+    setError(false);
+    setRows((data as Row[]) ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchBoard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board, period]);
 
   const sub = (r: Row) =>
@@ -136,6 +146,13 @@ export default function LeaderboardPage() {
               </li>
             ))}
           </ol>
+        </div>
+      ) : error ? (
+        <div className="zh-card p-8 text-center text-white/60 flex flex-col gap-2">
+          <p>⚠️ Couldn&apos;t load the leaderboard. Check your connection.</p>
+          <button onClick={fetchBoard} className="text-amber-300 font-semibold underline">
+            Try again
+          </button>
         </div>
       ) : rows.length === 0 ? (
         <div className="zh-card p-8 text-center text-white/60">
