@@ -8,10 +8,12 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- UX : mettre en avant la ligne du joueur courant sur `/leaderboard` (fond
-  légèrement teinté) quand il apparaît dans la liste chargée, pour la
-  repérer plus vite — comparaison client sur `getPlayerId()`, aucune
-  nouvelle RPC.
+- UX : indicateur "vous avez une cachette active" plus visible sur la nav
+  (actuellement seulement visible en ouvrant `/create`), pour rappeler au
+  joueur qu'une seule cachette peut être active à la fois.
+- Perf : envisager un index composite sur `attempts(hide_id, player_id,
+  created_at)` si le volume de tentatives grossit, pour garder
+  `get_hide_statuses`/`try_attempt` rapides sans changer leur comportement.
 
 ## En cours
 
@@ -19,6 +21,17 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-01** — Gestion des erreurs réseau/API sur `/play` et
+  `/leaderboard` : les deux pages ignoraient l'`error` retourné par
+  Supabase (`const { data } = await ...`) et affichaient silencieusement
+  l'état "vide" ("No active hides yet." / "No one on the board yet.") en
+  cas d'échec de la requête (coupure réseau, panne Supabase). Ajout d'un
+  état d'erreur dédié avec message explicite et bouton « Try again » sur
+  les deux pages, cohérent avec la gestion d'erreur déjà en place dans
+  `HideGame.tsx`/`PrivatePlay.tsx`. L'item de backlog précédent
+  (surlignage de la ligne du joueur sur `/leaderboard`) s'est avéré déjà
+  implémenté depuis le commit MVP initial — retiré du backlog, remplacé
+  par de nouvelles idées ci-dessus.
 - **2026-07-31** — Respect de `prefers-reduced-motion` pour toutes les
   animations `animate-pulse` (squelettes de `/play` et `/leaderboard`, halo
   du cercle de révélation dans `HideGame.tsx`) via une seule règle CSS

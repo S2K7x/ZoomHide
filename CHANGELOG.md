@@ -2,6 +2,36 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-01
+
+**Correctif UX : erreurs réseau/API masquées en faux état "vide" sur `/play` et `/leaderboard`.**
+
+- `app/play/page.tsx` : `fetchHides` ignorait l'`error` retourné par la
+  requête Supabase (`const { data } = await q;`), donc un échec réseau ou
+  une panne côté Supabase affichait silencieusement « No active hides
+  yet. » comme si le feed était réellement vide. Ajout d'un état `error`
+  et d'une carte dédiée « ⚠️ Couldn't load hides. » avec bouton « Try
+  again » qui relance `fetchHides()`.
+- `app/leaderboard/page.tsx` : même problème sur l'appel RPC
+  `get_leaderboard`, affichant « No one on the board yet. » en cas
+  d'échec. Fetch extrait dans `fetchBoard()` (réutilisable), même carte
+  d'erreur avec bouton « Try again ».
+
+Pourquoi : en auditant le backlog, l'item du jour (« mettre en avant la
+ligne du joueur courant sur `/leaderboard` ») s'est avéré déjà implémenté
+depuis le commit MVP initial (`r.player_id === me` avec fond ambré et
+libellé « (you) », présents dans `app/leaderboard/page.tsx` depuis le
+début) — item retiré du backlog sans travail à faire. En cherchant la
+prochaine amélioration prioritaire, un vrai bug de correction est apparu :
+deux des trois pages de données (`/play`, `/leaderboard`) n'avaient aucune
+gestion d'erreur sur leurs appels Supabase, contrairement à
+`HideGame.tsx`/`PrivatePlay.tsx` qui gèrent déjà proprement `error`. Un
+joueur en coupure réseau ou pendant un incident Supabase voyait un état
+« vide » trompeur au lieu de comprendre que le chargement avait échoué.
+Changement 100% front (gestion d'erreur uniquement), aucune nouvelle
+requête, RPC, ni dépendance ; aucun impact sur les quotas, les règles de
+jeu, ou la sécurité (aucune donnée supplémentaire exposée).
+
 ## 2026-07-31
 
 **Accessibilité : respect de `prefers-reduced-motion` sur les animations `animate-pulse`.**

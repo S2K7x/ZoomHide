@@ -33,6 +33,7 @@ export default function PlayFeed() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [hideDone, setHideDone] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchHides = async (opts?: { isManual?: boolean; loadMore?: boolean }) => {
     const offset = opts?.loadMore ? hides.length : 0;
@@ -45,7 +46,16 @@ export default function PlayFeed() {
     if (sort === "hardest") q = q.order("fail_pct", { ascending: false, nullsFirst: false });
     if (sort === "expiring") q = q.order("expires_at", { ascending: true });
     q = q.order("id", { ascending: true }).range(offset, offset + PAGE_SIZE - 1);
-    const { data } = await q;
+    const { data, error: fetchError } = await q;
+
+    if (fetchError) {
+      setError(true);
+      setLoading(false);
+      if (opts?.isManual) setRefreshing(false);
+      if (opts?.loadMore) setLoadingMore(false);
+      return;
+    }
+    setError(false);
     const list = (data as Hide[]) ?? [];
     setHides((prev) => (opts?.loadMore ? [...prev, ...list] : list));
     setHasMore(list.length === PAGE_SIZE);
@@ -162,6 +172,16 @@ export default function PlayFeed() {
               </div>
             </div>
           ))}
+        </div>
+      ) : error ? (
+        <div className="zh-card text-center py-10 px-6 text-white/60 flex flex-col gap-2">
+          <p>⚠️ Couldn&apos;t load hides. Check your connection.</p>
+          <button
+            onClick={() => fetchHides()}
+            className="text-amber-300 font-semibold underline"
+          >
+            Try again
+          </button>
         </div>
       ) : hides.length === 0 ? (
         <div className="zh-card text-center py-10 px-6 text-white/60 flex flex-col gap-2">
