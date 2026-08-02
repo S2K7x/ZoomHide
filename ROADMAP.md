@@ -8,9 +8,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- UX : indicateur "vous avez une cachette active" plus visible sur la nav
-  (actuellement seulement visible en ouvrant `/create`), pour rappeler au
-  joueur qu'une seule cachette peut être active à la fois.
 - Perf : envisager un index composite sur `attempts(hide_id, player_id,
   created_at)` si le volume de tentatives grossit, pour garder
   `get_hide_statuses`/`try_attempt` rapides sans changer leur comportement.
@@ -21,6 +18,15 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-02** — Indicateur "cachette active" sur la barre de navigation :
+  un petit point vert sur l'icône 📸 Hide quand le joueur a déjà une
+  cachette en cours, visible sur toutes les pages (avant, ce n'était visible
+  qu'en ouvrant `/create`). Nouvelle RPC dédiée `has_active_hide` (booléen,
+  `supabase/migrations/009_has_active_hide.sql`), appelée une seule fois par
+  session côté `components/NavBar.tsx` (la nav ne remonte pas entre les
+  navigations client-side). S'appuie sur l'index partiel unique déjà
+  existant `uniq_active_hide_per_creator` : coût quasi nul, aucune donnée
+  sensible renvoyée.
 - **2026-08-01** — Gestion des erreurs réseau/API sur `/play` et
   `/leaderboard` : les deux pages ignoraient l'`error` retourné par
   Supabase (`const { data } = await ...`) et affichaient silencieusement

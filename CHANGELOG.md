@@ -2,6 +2,37 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-02
+
+**UX : indicateur "cachette active" visible sur toute la nav.**
+
+- `supabase/migrations/009_has_active_hide.sql` : nouvelle RPC
+  `has_active_hide(p_creator_id text) returns boolean`, `security definer`,
+  simple `exists()` sur `hides(creator_id, status, expires_at)`.
+- `components/NavBar.tsx` : appel de cette RPC au montage (une fois par
+  session, la nav étant montée dans `app/layout.tsx` et ne se démontant pas
+  entre les navigations client-side), affichage d'un petit point vert sur
+  l'icône 📸 Hide quand `hasActiveHide` est vrai et que l'onglet n'est pas
+  déjà actif.
+
+Pourquoi : c'était le seul item de code encore présent dans le backlog.
+Jusqu'ici, la seule façon de savoir qu'on avait déjà une cachette active
+était d'ouvrir `/create`, qui affiche alors l'écran dédié avec le
+countdown/le code privé — mais rien ne le rappelait ailleurs dans l'app
+(sur `/play` ou `/leaderboard` par exemple), alors que la règle « une seule
+cachette active à la fois » peut surprendre un joueur qui tente de
+republier. Une RPC dédiée plutôt que la réutilisation de
+`get_my_active_hide` existante : cette dernière calcule aussi les compteurs
+`total_attempts`/`finds` via deux sous-requêtes supplémentaires inutiles
+pour un simple badge, et n'est jusqu'ici appelée que sur `/create` — en
+faire une dépendance globale de la nav (donc de toutes les pages) aurait
+propagé ce coût à chaque page vue. `has_active_hide` s'appuie sur l'index
+partiel unique déjà existant `uniq_active_hide_per_creator(creator_id) where
+status = 'active'`, donc l'`exists()` est un index-only scan — négligeable
+sur le quota compute Free tier, même appelé une fois par session sur
+n'importe quelle page. Aucune donnée de position ni photo exposée, aucune
+règle de jeu modifiée.
+
 ## 2026-08-01
 
 **Correctif UX : erreurs réseau/API masquées en faux état "vide" sur `/play` et `/leaderboard`.**
