@@ -2,6 +2,37 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-03
+
+**Sécurité : bucket Storage `photos` ne permet plus le listing public.**
+
+- `supabase/migrations/010_restrict_photo_bucket_listing.sql` : suppression
+  de la policy RLS `"public read photos"` (`for select using (bucket_id =
+  'photos')`) sur `storage.objects`, introduite dans la migration initiale
+  `001_init.sql`.
+
+Pourquoi : en auditant la sécurité du projet via l'advisor Supabase (étape
+prioritaire de la routine, avant même de regarder le backlog), un vrai
+avertissement est apparu : `public_bucket_allows_listing`. Le bucket
+`photos` est marqué `public = true`, ce qui suffit pour que
+`getPublicUrl()` (seule méthode utilisée par `app/create/page.tsx`, vérifié
+par recherche dans tout le code — aucun `.list()` ni `.download()`) serve
+les fichiers via `/storage/v1/object/public/photos/...`, une route qui ne
+consulte pas les RLS. La policy SELECT large en plus de ce flag public ne
+servait donc qu'à une chose : permettre à n'importe qui d'énumérer
+*tout* le contenu du bucket via l'API de listing (`/storage/v1/object/list/
+photos` ou le SDK `.list()`), y compris les photos de cachettes privées ou
+déjà expirées — que le design du jeu voulait accessibles uniquement via
+leur lien/code, jamais par simple navigation. Changement 100% base de
+données (une seule policy supprimée), zéro impact sur les quotas
+Supabase/Vercel, aucune régression sur l'affichage des photos (confirmé via
+`get_advisors` post-migration : le warning a disparu ; `npm run build`
+passe). Aucune règle de jeu modifiée. Item de sécurité traité en priorité
+sur le backlog, conformément à la règle de priorisation de la routine ; le
+backlog (rappel de suivi manuel des quotas, index composite conditionnel —
+non pertinent vu le volume actuel de 6 `hides`/8 `attempts`) reste
+inchangé pour la prochaine exécution.
+
 ## 2026-08-02
 
 **UX : indicateur "cachette active" visible sur toute la nav.**

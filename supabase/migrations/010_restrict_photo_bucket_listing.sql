@@ -1,0 +1,15 @@
+-- 2026-08-03 : retire la policy SELECT trop permissive sur storage.objects
+-- pour le bucket "photos".
+--
+-- Le bucket est déjà public (public = true) : l'affichage des photos via
+-- getPublicUrl() (app/create/page.tsx) passe par la route
+-- /storage/v1/object/public/photos/... qui ne dépend PAS des policies RLS
+-- de storage.objects -- rien ne casse côté app en retirant cette policy.
+-- Elle ne servait donc qu'à autoriser le listing (`.list()` / API storage)
+-- de tout le contenu du bucket, qu'aucun code de l'app n'utilise
+-- (grep confirmé : seul getPublicUrl() est utilisé, jamais `.list()` ni
+-- `.download()`), permettant à n'importe qui d'énumérer toutes les photos
+-- jamais uploadées -- y compris celles de cachettes privées ou expirées,
+-- censées n'être accessibles que via leur lien/code. Flag levé par
+-- l'advisor de sécurité Supabase (public_bucket_allows_listing).
+drop policy if exists "public read photos" on storage.objects;
