@@ -18,6 +18,16 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-03** — Sécurité : suppression de la policy RLS `"public read
+  photos"` sur `storage.objects` (bucket `photos`), qui autorisait le
+  listing complet du bucket (n'importe qui pouvait énumérer toutes les
+  photos jamais uploadées, y compris celles de cachettes privées ou
+  expirées) — signalé par l'advisor de sécurité Supabase
+  (`public_bucket_allows_listing`). L'affichage des photos dans l'app
+  (`getPublicUrl()`) ne dépend pas de cette policy (le bucket est déjà
+  `public = true`, l'accès direct par URL passe par une route qui ne
+  vérifie pas les RLS), donc aucune régression possible. Migration
+  `supabase/migrations/010_restrict_photo_bucket_listing.sql`.
 - **2026-08-02** — Indicateur "cachette active" sur la barre de navigation :
   un petit point vert sur l'icône 📸 Hide quand le joueur a déjà une
   cachette en cours, visible sur toutes les pages (avant, ce n'était visible
