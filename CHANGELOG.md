@@ -2,6 +2,40 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-04
+
+**UX : dernier dialogue navigateur natif (`confirm()`) remplacé par une modale in-app.**
+
+- `app/create/page.tsx` : le bouton « 🗑️ Delete this hide » utilisait
+  `window.confirm("Delete your active hide?")`. Remplacé par une modale
+  in-app (`showDeleteConfirm`/`deleting`) au style `zh-card`/`zh-btn`, avec
+  boutons Cancel/Delete et état de chargement pendant l'appel RPC
+  `delete_hide`.
+
+Pourquoi : l'audit sécurité Supabase (`get_advisors`) n'a rien remonté de
+nouveau — seulement les avertissements déjà connus et acceptés (RLS
+"enabled no policy" sur `players`/`hides`/`attempts`/`reports`, qui ne sont
+accessibles que via des RPC `security definer` par design ; ces RPC visibles
+par `anon`, également volontaire vu qu'il n'y a pas d'authentification dans
+le jeu). Le seul nouvel élément — un FK non indexé sur `reports.hide_id`
+(niveau INFO) — s'est avéré sans impact réel : `delete_hide`/`expire_hides`
+ne font jamais de vrai `delete from hides` (seulement des `update status`),
+donc le `on delete cascade` ne se déclenche jamais en pratique, et
+`reports` n'est lu nulle part dans l'app. Ajouté au backlog en priorité
+basse plutôt que traité aujourd'hui.
+
+En cherchant l'amélioration du jour dans le code plutôt que dans un backlog
+qui ne contenait que des rappels de suivi manuel, une recherche complète du
+repo (`alert(`/`confirm(`/`prompt(`) a montré qu'il restait exactement un
+dialogue natif du navigateur : le `confirm()` de suppression de cachette
+sur `/create`. Le `prompt()`/`alert()` du bouton de report avait déjà été
+remplacé le 2026-07-19 par une modale identique dans `HideGame.tsx` ; ce
+changement termine ce nettoyage en reprenant le même pattern déjà établi.
+Changement 100% front (un seul fichier, aucune nouvelle requête ni RPC),
+aucun impact sur les quotas, aucune règle de jeu ni sécurité touchée
+(même RPC `delete_hide` appelée, avec les mêmes paramètres). `npm run
+build` passe.
+
 ## 2026-08-03
 
 **Sécurité : bucket Storage `photos` ne permet plus le listing public.**
