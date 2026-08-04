@@ -8,9 +8,21 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
-- Perf : envisager un index composite sur `attempts(hide_id, player_id,
-  created_at)` si le volume de tentatives grossit, pour garder
-  `get_hide_statuses`/`try_attempt` rapides sans changer leur comportement.
+- Perf (priorité basse) : l'advisor Supabase signale `reports.hide_id` (FK
+  vers `hides`, `on delete cascade`) sans index couvrant
+  (`unindexed_foreign_keys`, niveau INFO). Actuellement sans impact réel :
+  `delete_hide`/`expire_hides` ne font que `update ... set status = ...`,
+  jamais de `delete from hides`, donc le cascade ne se déclenche jamais en
+  pratique, et `reports` n'est lu nulle part (pas de dashboard modération).
+  À ajouter seulement si un vrai `delete from hides` ou une lecture par
+  `hide_id` apparaît un jour.
+- UX mobile : `app/manifest.json` (nom, icônes, `display: standalone`) pour
+  permettre le "Add to Home Screen" sur mobile — fichier statique, zéro
+  coût compute/storage, cohérent avec les balises Open Graph déjà en place
+  (2026-07-17).
+- Note : l'index composite sur `attempts(hide_id, player_id, ...)` évoqué
+  précédemment existe déjà (`idx_attempts_daily`, migration `001_init.sql`)
+  — retiré du backlog, rien à faire.
 
 ## En cours
 
@@ -18,6 +30,12 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-04** — UX : remplacement du `confirm()` natif du bouton « Delete
+  this hide » de `/create` par une modale in-app cohérente avec le design
+  (`zh-card`/`zh-btn`), même pattern que la modale de report déjà en place
+  dans `HideGame.tsx`. Dernier dialogue natif du navigateur (`alert`/
+  `confirm`/`prompt`) restant dans le code, repéré par recherche complète du
+  repo.
 - **2026-08-03** — Sécurité : suppression de la policy RLS `"public read
   photos"` sur `storage.objects` (bucket `photos`), qui autorisait le
   listing complet du bucket (n'importe qui pouvait énumérer toutes les

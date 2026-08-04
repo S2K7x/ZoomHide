@@ -47,6 +47,8 @@ export default function CreatePage() {
   const [publishedId, setPublishedId] = useState("");
   const [publishedCode, setPublishedCode] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const copyLink = async (key: string, text: string) => {
     try {
@@ -199,11 +201,13 @@ export default function CreatePage() {
 
   const removeHide = async () => {
     if (!myHide) return;
-    if (!confirm("Delete your active hide?")) return;
+    setDeleting(true);
     await supabase.rpc("delete_hide", {
       p_hide_id: myHide.id,
       p_creator_id: getPlayerId(),
     });
+    setDeleting(false);
+    setShowDeleteConfirm(false);
     setMyHide(null);
   };
 
@@ -306,11 +310,44 @@ export default function CreatePage() {
           </div>
         )}
         <button
-          onClick={removeHide}
+          onClick={() => setShowDeleteConfirm(true)}
           className="rounded-2xl border border-red-400/50 text-red-300 font-semibold py-3"
         >
           🗑️ Delete this hide
         </button>
+
+        {showDeleteConfirm && (
+          <div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-6"
+            onClick={() => !deleting && setShowDeleteConfirm(false)}
+          >
+            <div
+              className="zh-card w-full max-w-sm p-5 flex flex-col gap-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="font-semibold">Delete your active hide?</p>
+              <p className="text-sm text-white/60">
+                This can&apos;t be undone. Attempts and finds on it will be lost.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="zh-btn zh-btn-ghost flex-1 py-2.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={removeHide}
+                  disabled={deleting}
+                  className="zh-btn flex-1 py-2.5 border border-red-400/50 text-red-300 font-semibold"
+                >
+                  {deleting ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
