@@ -20,6 +20,17 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   permettre le "Add to Home Screen" sur mobile — fichier statique, zéro
   coût compute/storage, cohérent avec les balises Open Graph déjà en place
   (2026-07-17).
+- UX : bouton « Reset zoom » sur `ZoomPanViewer` pour revenir d'un coup à la
+  vue d'ensemble (remettre `scale`/`x`/`y` à leur valeur initiale) sans
+  devoir pincer-dézoomer manuellement — utile après un zoom poussé pour
+  retenter une zone différente. Purement front, aucune nouvelle RPC.
+- Accessibilité : fermeture de la modale « Report this hide »
+  (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
+  dehors déjà géré.
+- UX : petit indicateur de chargement (spinner/texte) le temps que le
+  canvas de `RevealShare.tsx` génère l'image story, actuellement aucun
+  retour visuel entre l'apparition de l'écran « Found! » et celle du bouton
+  « Share to story » (asynchrone, peut prendre un instant sur mobile lent).
 - Note : l'index composite sur `attempts(hide_id, player_id, ...)` évoqué
   précédemment existe déjà (`idx_attempts_daily`, migration `001_init.sql`)
   — retiré du backlog, rien à faire.
@@ -30,6 +41,12 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-05** — Squelette de chargement (pulsation `animate-pulse`) sur
+  la photo de jeu dans `components/ZoomPanViewer.tsx` (écran `/play/[hideId]`
+  et `/play/private/[token]`), au lieu d'un cadre noir vide pendant le
+  téléchargement de la photo. Ratio 1:1 par défaut avant que la vraie photo
+  ne soit connue, pour que le squelette ait une hauteur stable au lieu de
+  s'effondrer à 0.
 - **2026-08-04** — UX : remplacement du `confirm()` natif du bouton « Delete
   this hide » de `/create` par une modale in-app cohérente avec le design
   (`zh-card`/`zh-btn`), même pattern que la modale de report déjà en place

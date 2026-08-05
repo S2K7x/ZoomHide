@@ -2,6 +2,37 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-05
+
+**UX : squelette de chargement sur la photo de jeu (`ZoomPanViewer`).**
+
+- `components/ZoomPanViewer.tsx` : affichage d'un overlay `animate-pulse`
+  (icône 🔎 estompée sur fond `bg-white/5`) pendant le téléchargement de la
+  photo de jeu, à la place du cadre noir vide précédent (`bg-neutral-900`
+  seul). Le conteneur utilise un ratio 1:1 par défaut tant que les
+  dimensions réelles de la photo ne sont pas connues (`aspect ?? 1` au lieu
+  de `aspect ?? undefined`), pour que le squelette ait une hauteur stable
+  au lieu de s'effondrer à 0 avant le premier rendu de l'`<img>`. L'image
+  elle-même s'affiche désormais avec un fondu (`transition-opacity`) une
+  fois chargée plutôt qu'un pop-in brut.
+
+Pourquoi : c'était le seul écran restant sans repère de chargement, alors
+que ce pattern existe déjà pour le feed `/play` (2026-07-23) et
+`/leaderboard` (2026-07-24) — la photo de jeu elle-même (`/play/[hideId]`,
+`/play/private/[token]`) en était restée dépourvue, avec un flash de cadre
+noir peu engageant sur connexion lente. Changement 100% front (CSS/JSX
+uniquement, réutilise le pattern `animate-pulse` déjà couvert par la règle
+globale `prefers-reduced-motion` du 2026-07-31), aucune nouvelle requête ni
+RPC, zéro impact sur les quotas Supabase/Vercel. Aucune règle de jeu ni
+sécurité touchée (le calcul de succès et la position du sticker restent
+exclusivement côté serveur).
+
+Backlog : complété avec 3 nouvelles idées (bouton « Reset zoom » sur
+`ZoomPanViewer`, fermeture de la modale de signalement via Échap,
+indicateur de chargement sur la génération de l'image story) pour les
+prochaines exécutions, en plus des items déjà notés (manifest PWA, index
+FK basse priorité, rappel de suivi des quotas).
+
 ## 2026-08-04
 
 **UX : dernier dialogue navigateur natif (`confirm()`) remplacé par une modale in-app.**

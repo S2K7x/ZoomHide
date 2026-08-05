@@ -168,8 +168,10 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
       ref={containerRef}
       // le cadre épouse le ratio réel de la photo : plus aucun crop au repos.
       // Une photo très haute est plafonnée en hauteur mais reste entièrement
-      // atteignable au pan (voir bornes dans apply()).
-      style={{ aspectRatio: aspect ?? undefined, maxHeight: "72dvh" }}
+      // atteignable au pan (voir bornes dans apply()). Le ratio 1:1 par défaut
+      // (avant que la vraie photo ne soit connue) donne au squelette de
+      // chargement une hauteur stable au lieu de s'effondrer à 0.
+      style={{ aspectRatio: aspect ?? 1, maxHeight: "72dvh" }}
       className={`relative overflow-hidden touch-none select-none bg-neutral-900 ${className ?? ""}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -177,6 +179,14 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
       onPointerCancel={onPointerUp}
       onWheel={onWheel}
     >
+      {!loaded && (
+        <div
+          aria-label="Loading photo"
+          className="absolute inset-0 grid place-items-center animate-pulse bg-white/5"
+        >
+          <span className="text-3xl opacity-30">🔎</span>
+        </div>
+      )}
       <div ref={contentRef} className="origin-top-left will-change-transform">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -190,7 +200,7 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
             }
             setLoaded(true);
           }}
-          className="w-full h-auto pointer-events-none"
+          className={`w-full h-auto pointer-events-none transition-opacity ${loaded ? "opacity-100" : "opacity-0"}`}
         />
         {loaded && (
           <div className="absolute inset-0 pointer-events-none">{children}</div>
