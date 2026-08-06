@@ -19,11 +19,12 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 - UX mobile : `app/manifest.json` (nom, icônes, `display: standalone`) pour
   permettre le "Add to Home Screen" sur mobile — fichier statique, zéro
   coût compute/storage, cohérent avec les balises Open Graph déjà en place
-  (2026-07-17).
-- UX : bouton « Reset zoom » sur `ZoomPanViewer` pour revenir d'un coup à la
-  vue d'ensemble (remettre `scale`/`x`/`y` à leur valeur initiale) sans
-  devoir pincer-dézoomer manuellement — utile après un zoom poussé pour
-  retenter une zone différente. Purement front, aucune nouvelle RPC.
+  (2026-07-17). Bloqué le 2026-08-06 : nécessite des icônes PNG (192x192,
+  512x512 minimum) et aucun outil de génération/redimensionnement d'image
+  (ImageMagick, sharp, Pillow) n'est disponible dans cet environnement
+  d'exécution. À déposer dans `public/assets/` (ex. `icon-192.png`,
+  `icon-512.png`) manuellement ou via un environnement outillé, puis créer
+  le manifest.
 - Accessibilité : fermeture de la modale « Report this hide »
   (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
   dehors déjà géré.
@@ -41,6 +42,10 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-06** — Bouton « ↺ Reset zoom » sur `components/ZoomPanViewer.tsx`,
+  affiché en bas à droite de la photo dès que le joueur a zoomé (`scale >
+  1`), pour revenir d'un coup au cadrage initial (`scale`/`x`/`y` remis à
+  leur valeur de départ) au lieu de devoir pincer-dézoomer manuellement.
 - **2026-08-05** — Squelette de chargement (pulsation `animate-pulse`) sur
   la photo de jeu dans `components/ZoomPanViewer.tsx` (écran `/play/[hideId]`
   et `/play/private/[token]`), au lieu d'un cadre noir vide pendant le
