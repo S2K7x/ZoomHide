@@ -69,7 +69,8 @@ export default function LeaderboardPage() {
       <div className="flex items-center justify-center relative">
         <Link
           href="/"
-          className="absolute left-0 grid place-items-center w-9 h-9 rounded-full zh-card"
+          aria-label="Back to home"
+          className="absolute left-0 grid place-items-center w-10 h-10 rounded-full zh-card zh-card-interactive text-lg"
         >
           ←
         </Link>
@@ -101,11 +102,8 @@ export default function LeaderboardPage() {
           <button
             key={k}
             onClick={() => setPeriod(k)}
-            className={`rounded-full px-3.5 py-1.5 border transition ${
-              period === k
-                ? "border-white/70 bg-white/15 font-bold"
-                : "border-white/15 text-white/55"
-            }`}
+            aria-pressed={period === k}
+            className={`zh-chip ${period === k ? "zh-chip-on-soft" : ""}`}
           >
             {label}
           </button>
@@ -120,11 +118,11 @@ export default function LeaderboardPage() {
           {/* Podium skeleton */}
           <div className="grid grid-cols-3 items-end gap-2 pt-2">
             {["h-20", "h-28", "h-16"].map((h, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
-                <div className="w-[52px] h-[52px] rounded-full bg-white/10" />
-                <div className="h-2.5 w-14 rounded bg-white/10" />
-                <div className="h-2.5 w-6 rounded bg-white/10" />
-                <div className={`w-full ${h} rounded-t-2xl bg-white/10`} />
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div className="w-[52px] h-[52px] rounded-full zh-skeleton" />
+                <div className="h-2.5 w-14 rounded zh-skeleton" />
+                <div className="h-2.5 w-6 rounded zh-skeleton" />
+                <div className={`w-full ${h} rounded-t-2xl zh-skeleton`} />
               </div>
             ))}
           </div>
@@ -134,15 +132,15 @@ export default function LeaderboardPage() {
             {Array.from({ length: 5 }).map((_, i) => (
               <li
                 key={i}
-                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-white/10 bg-white/5 animate-pulse"
+                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-white/10 bg-white/5"
               >
-                <div className="w-6 h-2.5 rounded bg-white/10" />
-                <div className="w-[38px] h-[38px] rounded-full bg-white/10 shrink-0" />
+                <div className="w-6 h-2.5 rounded zh-skeleton" />
+                <div className="w-[38px] h-[38px] rounded-full zh-skeleton shrink-0" />
                 <div className="flex-1 flex flex-col gap-1.5 py-0.5">
-                  <div className="h-2.5 w-2/5 rounded bg-white/10" />
-                  <div className="h-2 w-1/3 rounded bg-white/10" />
+                  <div className="h-2.5 w-2/5 rounded zh-skeleton" />
+                  <div className="h-2 w-1/3 rounded zh-skeleton" />
                 </div>
-                <div className="h-2.5 w-6 rounded bg-white/10" />
+                <div className="h-2.5 w-6 rounded zh-skeleton" />
               </li>
             ))}
           </ol>
@@ -183,7 +181,11 @@ export default function LeaderboardPage() {
                   </p>
                   <p className="text-[13px] font-black text-amber-300">{r.score}</p>
                   <div
-                    className={`w-full ${heights[i]} rounded-t-2xl bg-gradient-to-b ${blockGrad[i]} grid place-items-center text-2xl font-black text-black/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]`}
+                    className={`w-full ${heights[i]} rounded-t-2xl bg-gradient-to-b ${blockGrad[i]} grid place-items-center text-2xl font-black text-black/80 ${
+                      rank === 1
+                        ? "shadow-[0_-14px_36px_-18px_rgba(246,184,30,0.9),inset_0_1px_0_rgba(255,255,255,0.5)]"
+                        : "shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
+                    }`}
                   >
                     {rank}
                   </div>
@@ -197,9 +199,9 @@ export default function LeaderboardPage() {
             {rest.map((r, i) => (
               <li
                 key={r.player_id}
-                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 border ${
+                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 border transition-colors ${
                   r.player_id === me
-                    ? "bg-amber-400/15 border-amber-400/40"
+                    ? "bg-amber-400/15 border-amber-400/40 shadow-[0_10px_26px_-18px_rgba(246,184,30,0.9)]"
                     : "bg-white/5 border-white/10"
                 }`}
               >

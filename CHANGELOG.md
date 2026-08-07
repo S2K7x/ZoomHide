@@ -4,6 +4,47 @@ Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
 ## 2026-08-07
 
+**Design : rafraîchissement du système visuel partagé (`app/globals.css`).**
+
+- Accessibilité : anneau de focus clavier global (`:focus-visible`, ambre
+  `--ring`) — aucun état de focus visible n'existait jusqu'ici sur les
+  boutons, liens et chips, la navigation au clavier était invisible.
+- Nouvelles classes réutilisables dans `app/globals.css`, qui remplacent
+  des chaînes Tailwind dupliquées d'un écran à l'autre :
+  - `.zh-chip` / `.zh-chip-on` / `.zh-chip-on-soft` pour les filtres du feed
+    (`/play` : tri + « Hide tried/found ») et la période du leaderboard —
+    4 copies inline de la même combinaison `rounded-full px-3.5 py-1.5
+    border …` supprimées, avec `aria-pressed` ajouté sur chaque bascule.
+  - `.zh-badge` pour les pastilles en surimpression des vignettes du feed
+    (temps restant, 🔥 HARD, ✅ Found, 👀 Tried), désormais toutes de même
+    taille, même rayon et même bordure.
+  - `.zh-skeleton` : dégradé animé (shimmer) à la place des blocs
+    `bg-white/10 animate-pulse`, utilisé par les squelettes du feed, du
+    leaderboard et de la photo de jeu (`ZoomPanViewer`).
+  - `.zh-card-interactive` : soulèvement au survol des cartes cliquables
+    (vignette de hide, bouton retour du leaderboard).
+- États de survol sur `.zh-btn*` et `.zh-chip`, cantonnés à
+  `@media (hover: hover) and (pointer: fine)` pour ne pas laisser d'état
+  « collé » après un tap sur mobile. Toutes les nouvelles animations et
+  transitions sont neutralisées sous `prefers-reduced-motion: reduce`.
+- Page d'accueil : halo ambre respirant derrière l'icône hero
+  (`.zh-glow`), badge « 3 tries a day · new hides every day » sous le
+  sous-titre, et « How it works » passé en `<ol>` sémantique avec un fil
+  vertical dégradé reliant les 3 étapes.
+- `NavBar` : `aria-current="page"` sur l'onglet actif (absent jusqu'ici),
+  pastille active légèrement agrandie avec transition.
+- `/play` : titre « Active hides » ne passe plus sur deux lignes en 390px
+  (le lien privé passe de « 🔒 Have a code? » à « 🔒 Code » + `aria-label`
+  explicite). `/leaderboard` : marche du 1er mise en avant par un halo
+  ambre, ligne du joueur courant renforcée, bouton retour agrandi à 40px
+  (cible tactile) avec `aria-label`.
+
+Pourquoi : le système visuel (`zh-card`, `zh-btn*`) couvrait les surfaces et
+les boutons mais s'arrêtait là — chips, pastilles et squelettes étaient
+réécrits à la main sur chaque écran, avec des variantes qui divergeaient, et
+rien ne rendait le focus clavier visible. 100% CSS/JSX, aucune requête ni
+RPC ajoutée, aucune règle de jeu ni sécurité touchée.
+
 **UX mobile : PWA installable ("Add to Home Screen") via `app/manifest.ts`.**
 
 - Nouveau `app/manifest.ts` (convention Next.js `MetadataRoute.Manifest`,

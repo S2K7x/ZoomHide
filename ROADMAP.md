@@ -33,6 +33,15 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-07** — Design : rafraîchissement du système visuel partagé
+  (`app/globals.css`) — anneau de focus clavier global (`:focus-visible`),
+  classes réutilisables `.zh-chip`/`.zh-badge`/`.zh-skeleton` (shimmer)/
+  `.zh-card-interactive` remplaçant les chaînes Tailwind dupliquées de
+  `/play` et `/leaderboard`, états de survol limités aux pointeurs fins,
+  respect de `prefers-reduced-motion`, plus quelques finitions
+  (halo hero + fil des étapes sur `/`, `aria-current` dans `NavBar`,
+  titre du feed sur une seule ligne en 390px, podium et ligne « you » du
+  leaderboard renforcés).
 - **2026-08-07** — UX mobile : `app/manifest.ts` (nom, description,
   `display: standalone`, `theme_color`/`background_color` alignés sur le
   thème sombre existant) pour permettre le "Add to Home Screen" sur mobile.

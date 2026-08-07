@@ -189,7 +189,7 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
       {!loaded && (
         <div
           aria-label="Loading photo"
-          className="absolute inset-0 grid place-items-center animate-pulse bg-white/5"
+          className="absolute inset-0 grid place-items-center zh-skeleton"
         >
           <span className="text-3xl opacity-30">🔎</span>
         </div>
