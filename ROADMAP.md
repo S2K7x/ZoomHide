@@ -16,10 +16,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   pratique, et `reports` n'est lu nulle part (pas de dashboard modération).
   À ajouter seulement si un vrai `delete from hides` ou une lecture par
   `hide_id` apparaît un jour.
-- UX mobile : `app/manifest.json` (nom, icônes, `display: standalone`) pour
-  permettre le "Add to Home Screen" sur mobile — fichier statique, zéro
-  coût compute/storage, cohérent avec les balises Open Graph déjà en place
-  (2026-07-17).
 - UX : bouton « Reset zoom » sur `ZoomPanViewer` pour revenir d'un coup à la
   vue d'ensemble (remettre `scale`/`x`/`y` à leur valeur initiale) sans
   devoir pincer-dézoomer manuellement — utile après un zoom poussé pour
@@ -41,6 +37,16 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-07** — UX mobile : `app/manifest.ts` (nom, description,
+  `display: standalone`, `theme_color`/`background_color` alignés sur le
+  thème sombre existant) pour permettre le "Add to Home Screen" sur mobile.
+  Icônes 192×192 et 512×512 générées via `next/og` (`app/icon-192/route.tsx`,
+  `app/icon-512/route.tsx`, loupe sur fond dégradé ambre, même style que
+  l'icône hero de la page d'accueil) au lieu d'attendre les PNG détourés du
+  mascot (pas encore déposés dans `public/assets/`) — routes marquées
+  `force-static`, donc pré-rendues en fichiers statiques au build, zéro
+  compute serveur à l'exécution. À remplacer par les vraies icônes de marque
+  une fois `public/assets/logo.png` disponible.
 - **2026-08-05** — Squelette de chargement (pulsation `animate-pulse`) sur
   la photo de jeu dans `components/ZoomPanViewer.tsx` (écran `/play/[hideId]`
   et `/play/private/[token]`), au lieu d'un cadre noir vide pendant le
