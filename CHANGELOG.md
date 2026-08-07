@@ -2,6 +2,43 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-07
+
+**UX mobile : PWA installable ("Add to Home Screen") via `app/manifest.ts`.**
+
+- Nouveau `app/manifest.ts` (convention Next.js `MetadataRoute.Manifest`,
+  servi automatiquement sur `/manifest.webmanifest` avec le lien `<head>`
+  correspondant ajouté par Next) : nom "Zoom Hide", description reprise du
+  `<meta description>` existant, `start_url: "/"`, `display: "standalone"`,
+  `background_color`/`theme_color` alignés sur `--bg-deep` (`#0a1024`) déjà
+  utilisé dans `app/globals.css`.
+- Icônes 192×192 et 512×512 (`app/icon-192/route.tsx`,
+  `app/icon-512/route.tsx`) générées avec `next/og` (`ImageResponse`, déjà
+  fourni par Next.js — aucune nouvelle dépendance) : une loupe dessinée en
+  CSS pur (cercle + poignée) sur le même dégradé ambre que l'icône hero de
+  `/`. Pas d'emoji (`next/og`/Satori ne les rend pas nativement sans police
+  externe) et pas d'assets de marque disponibles ailleurs — `logo.png` du
+  dossier `design/asset-prompts/` n'a pas encore été généré/déposé dans
+  `public/assets/` (toujours vide à ce jour). Ces icônes générées sont un
+  point de départ à remplacer une fois le vrai logo disponible.
+- Les deux routes sont marquées `export const dynamic = "force-static"` :
+  confirmé au build (`○ /icon-192`, `○ /icon-512`, `○ /manifest.webmanifest`
+  listées comme "Static" par `next build`), donc pré-rendues en fichiers
+  statiques servis par le CDN Vercel, aucun compute serveur par visite.
+
+Pourquoi : dernier item du backlog gagnant à être fait avant que les vrais
+mascot/logo PNG soient prêts — permet dès maintenant l'installation en app
+quasi-native sur mobile (icône sur l'écran d'accueil, pas de barre
+d'adresse), cohérent avec les balises Open Graph déjà en place
+(2026-07-17). Purement front/statique, zéro nouvelle dépendance, zéro
+risque sur les quotas Vercel/Supabase (pas de requête réseau ni de RPC),
+aucune règle de jeu ni sécurité touchée.
+
+Backlog : items retirés (manifest PWA ici, bouton « Reset zoom » livré la
+veille), 2 idées restantes (fermeture Échap de la modale de signalement,
+indicateur de chargement sur `RevealShare`), plus les 2 rappels de suivi
+non-code (quotas Supabase, index FK `reports.hide_id`).
+
 ## 2026-08-06
 
 **UX : bouton « Reset zoom » sur `ZoomPanViewer`.**
@@ -23,13 +60,11 @@ Changement 100% front (JSX/CSS + logique locale au composant), aucune
 nouvelle requête ni RPC, zéro impact sur les quotas Supabase/Vercel. Aucune
 règle de jeu ni sécurité touchée.
 
-L'autre item priorisé pour aujourd'hui, le manifest PWA
-(`app/manifest.json`, "Add to Home Screen"), reste bloqué : il nécessite des
-icônes PNG (192x192, 512x512 minimum) et aucun outil de génération/
-redimensionnement d'image (ImageMagick, sharp, Pillow) n'est disponible
-dans cet environnement d'exécution headless. Note ajoutée dans
-`ROADMAP.md` ; à traiter dès que des icônes peuvent être déposées dans
-`public/assets/`.
+L'autre item priorisé pour aujourd'hui, le manifest PWA ("Add to Home
+Screen"), était bloqué par l'absence d'outil de génération d'image
+(ImageMagick, sharp, Pillow) dans cet environnement headless pour produire
+les icônes PNG 192x192 / 512x512 ; il a été débloqué le lendemain via
+`next/og` (voir l'entrée 2026-08-07).
 
 ## 2026-08-05
 

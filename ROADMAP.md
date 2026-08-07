@@ -16,15 +16,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   pratique, et `reports` n'est lu nulle part (pas de dashboard modération).
   À ajouter seulement si un vrai `delete from hides` ou une lecture par
   `hide_id` apparaît un jour.
-- UX mobile : `app/manifest.json` (nom, icônes, `display: standalone`) pour
-  permettre le "Add to Home Screen" sur mobile — fichier statique, zéro
-  coût compute/storage, cohérent avec les balises Open Graph déjà en place
-  (2026-07-17). Bloqué le 2026-08-06 : nécessite des icônes PNG (192x192,
-  512x512 minimum) et aucun outil de génération/redimensionnement d'image
-  (ImageMagick, sharp, Pillow) n'est disponible dans cet environnement
-  d'exécution. À déposer dans `public/assets/` (ex. `icon-192.png`,
-  `icon-512.png`) manuellement ou via un environnement outillé, puis créer
-  le manifest.
 - Accessibilité : fermeture de la modale « Report this hide »
   (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
   dehors déjà géré.
@@ -42,6 +33,16 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-07** — UX mobile : `app/manifest.ts` (nom, description,
+  `display: standalone`, `theme_color`/`background_color` alignés sur le
+  thème sombre existant) pour permettre le "Add to Home Screen" sur mobile.
+  Icônes 192×192 et 512×512 générées via `next/og` (`app/icon-192/route.tsx`,
+  `app/icon-512/route.tsx`, loupe sur fond dégradé ambre, même style que
+  l'icône hero de la page d'accueil) au lieu d'attendre les PNG détourés du
+  mascot (pas encore déposés dans `public/assets/`) — routes marquées
+  `force-static`, donc pré-rendues en fichiers statiques au build, zéro
+  compute serveur à l'exécution. À remplacer par les vraies icônes de marque
+  une fois `public/assets/logo.png` disponible.
 - **2026-08-06** — Bouton « ↺ Reset zoom » sur `components/ZoomPanViewer.tsx`,
   affiché en bas à droite de la photo dès que le joueur a zoomé (`scale >
   1`), pour revenir d'un coup au cadrage initial (`scale`/`x`/`y` remis à
