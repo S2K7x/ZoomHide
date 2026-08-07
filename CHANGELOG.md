@@ -2,6 +2,35 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-06
+
+**UX : bouton « Reset zoom » sur `ZoomPanViewer`.**
+
+- `components/ZoomPanViewer.tsx` : nouveau bouton « ↺ Reset zoom » (style
+  `zh-btn-ghost`), affiché en superposition en bas à droite de la photo
+  uniquement quand le joueur a zoomé (`scale > 1`, nouvel état `zoomed`
+  dérivé dans `apply()`). Un clic remet `t.current` à `{x: 0, y: 0, scale:
+  1}` et rappelle `apply()` pour revenir instantanément au cadrage initial,
+  sans devoir pincer-dézoomer manuellement. `onPointerDown` du bouton fait
+  `stopPropagation()` pour ne pas déclencher la détection de tap du
+  conteneur parent (qui placerait sinon un marqueur de tentative sur la
+  photo au clic du bouton).
+
+Pourquoi : après un zoom poussé pour examiner une zone précise, revenir à la
+vue d'ensemble pour retenter ailleurs demandait plusieurs gestes de pan/pinch
+manuels, en particulier pénible sur mobile. Item du backlog du 2026-08-05.
+Changement 100% front (JSX/CSS + logique locale au composant), aucune
+nouvelle requête ni RPC, zéro impact sur les quotas Supabase/Vercel. Aucune
+règle de jeu ni sécurité touchée.
+
+L'autre item priorisé pour aujourd'hui, le manifest PWA
+(`app/manifest.json`, "Add to Home Screen"), reste bloqué : il nécessite des
+icônes PNG (192x192, 512x512 minimum) et aucun outil de génération/
+redimensionnement d'image (ImageMagick, sharp, Pillow) n'est disponible
+dans cet environnement d'exécution headless. Note ajoutée dans
+`ROADMAP.md` ; à traiter dès que des icônes peuvent être déposées dans
+`public/assets/`.
+
 ## 2026-08-05
 
 **UX : squelette de chargement sur la photo de jeu (`ZoomPanViewer`).**

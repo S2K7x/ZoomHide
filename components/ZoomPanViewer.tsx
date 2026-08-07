@@ -25,6 +25,7 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
   const contentRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
   const [aspect, setAspect] = useState<number | null>(null);
+  const [zoomed, setZoomed] = useState(false);
 
   const t = useRef({ x: 0, y: 0, scale: 1 });
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -57,7 +58,13 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
     s.x = sw <= w ? (w - sw) / 2 : Math.min(0, Math.max(w - sw, s.x));
     s.y = sh <= h ? (h - sh) / 2 : Math.min(0, Math.max(h - sh, s.y));
     el.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale})`;
+    setZoomed(s.scale > MIN_SCALE + 0.01);
   }, []);
+
+  const resetZoom = useCallback(() => {
+    t.current = { x: 0, y: 0, scale: MIN_SCALE };
+    apply();
+  }, [apply]);
 
   const midAndDist = () => {
     const pts = [...pointers.current.values()];
@@ -186,6 +193,17 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
         >
           <span className="text-3xl opacity-30">🔎</span>
         </div>
+      )}
+      {loaded && zoomed && (
+        <button
+          type="button"
+          aria-label="Reset zoom"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={resetZoom}
+          className="zh-btn absolute bottom-3 right-3 z-10 px-3 py-1.5 text-xs zh-btn-ghost"
+        >
+          ↺ Reset zoom
+        </button>
       )}
       <div ref={contentRef} className="origin-top-left will-change-transform">
         {/* eslint-disable-next-line @next/next/no-img-element */}
