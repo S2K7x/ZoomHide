@@ -2,6 +2,36 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-08
+
+**Accessibilité : fermeture de la modale « Report this hide » via la touche Échap.**
+
+- `components/HideGame.tsx` : nouvel effet qui écoute `keydown` sur `window`
+  tant que la modale de signalement (`showReport`) est ouverte et qu'aucun
+  envoi n'est en cours (`reportSubmitting`), et ferme la modale (`setShowReport(false)`)
+  sur la touche `Escape` — même garde-fou que le clic en dehors de la carte,
+  déjà géré par le `onClick` de l'overlay.
+
+Pourquoi : c'était le seul item de code non bloqué du backlog (le manifest
+PWA reste bloqué faute d'outil de génération d'image PNG dans cet
+environnement — revérifié aujourd'hui : toujours aucun `convert`/`magick`,
+`PIL` ni `sharp` disponibles). La modale de signalement se fermait déjà au
+clic en dehors, mais un joueur au clavier (ou un lecteur d'écran) n'avait
+aucun moyen de la fermer sans la souris. Changement 100% front (un seul
+`useEffect`, aucune nouvelle requête ni RPC), zéro impact sur les quotas
+Supabase/Vercel. Aucune règle de jeu ni sécurité touchée. Audit sécurité
+Supabase (`get_advisors`) revérifié en amont : uniquement les avertissements
+déjà connus et acceptés (RLS "enabled no policy" sur `players`/`hides`/
+`attempts`/`reports`/`code_attempts`, tous verrouillés et accessibles
+uniquement via RPC `security definer` ; la vue `active_hides` reste
+`security definer` par conception pour exposer un sous-ensemble de colonnes
+sans jamais renvoyer `pos_x`/`pos_y`) — aucun nouvel item de sécurité,
+rien à traiter en priorité aujourd'hui. `npm run build` passe.
+
+Backlog : il ne reste que le manifest PWA (bloqué), l'indicateur de
+chargement sur `RevealShare.tsx`, l'index FK basse priorité (conditionnel),
+et le rappel de suivi manuel des quotas.
+
 ## 2026-08-06
 
 **UX : bouton « Reset zoom » sur `ZoomPanViewer`.**

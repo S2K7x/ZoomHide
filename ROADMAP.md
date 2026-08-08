@@ -25,9 +25,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   d'exécution. À déposer dans `public/assets/` (ex. `icon-192.png`,
   `icon-512.png`) manuellement ou via un environnement outillé, puis créer
   le manifest.
-- Accessibilité : fermeture de la modale « Report this hide »
-  (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
-  dehors déjà géré.
 - UX : petit indicateur de chargement (spinner/texte) le temps que le
   canvas de `RevealShare.tsx` génère l'image story, actuellement aucun
   retour visuel entre l'apparition de l'écran « Found! » et celle du bouton
@@ -42,6 +39,9 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-08** — Fermeture de la modale « Report this hide »
+  (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
+  dehors déjà géré.
 - **2026-08-06** — Bouton « ↺ Reset zoom » sur `components/ZoomPanViewer.tsx`,
   affiché en bas à droite de la photo dès que le joueur a zoomé (`scale >
   1`), pour revenir d'un coup au cadrage initial (`scale`/`x`/`y` remis à

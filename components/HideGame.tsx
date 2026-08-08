@@ -112,6 +112,15 @@ export default function HideGame({
   const color = detail?.sticker_color ?? DEFAULT_COLOR;
   const resetLabel = useResetCountdown(!!detail && !detail.is_creator && !found && attemptsLeft === 0);
 
+  useEffect(() => {
+    if (!showReport || reportSubmitting) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowReport(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showReport, reportSubmitting]);
+
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_hide_detail", {
       p_hide_id: hideId,
