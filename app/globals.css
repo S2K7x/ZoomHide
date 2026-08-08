@@ -7,9 +7,12 @@
   --card-strong: rgba(255, 255, 255, 0.08);
   --card-border: rgba(255, 255, 255, 0.10);
   --accent: #ffd24a;
+  --accent-deep: #f6b81e;
   --blue: #4d8dff;
   --violet: #8b6cf0;
   --foreground: #e9f0ff;
+  --muted: rgba(233, 240, 255, 0.62);
+  --ring: rgba(255, 210, 74, 0.75);
 }
 
 @theme inline {
@@ -33,6 +36,13 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* ---- Accessibilité : anneau de focus clavier cohérent ---- */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
 /* ---- Surfaces & boutons réutilisables ---- */
 .zh-card {
   background: var(--card);
@@ -41,10 +51,26 @@ body {
   box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.8);
 }
 
+/* Carte cliquable : léger soulèvement au survol (pointeur fin uniquement,
+   pour ne pas laisser un état "collé" après un tap sur mobile). */
+.zh-card-interactive {
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.zh-card-interactive:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .zh-card-interactive:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 18px 38px -20px rgba(0, 0, 0, 0.9);
+  }
+}
+
 .zh-btn {
   border-radius: 1.1rem;
   font-weight: 800;
-  transition: transform 0.1s ease, filter 0.1s ease;
+  transition: transform 0.1s ease, filter 0.16s ease, background-color 0.16s ease;
   will-change: transform;
 }
 .zh-btn:active {
@@ -52,6 +78,11 @@ body {
 }
 .zh-btn:disabled {
   opacity: 0.45;
+}
+@media (hover: hover) and (pointer: fine) {
+  .zh-btn:not(:disabled):hover {
+    filter: brightness(1.08);
+  }
 }
 
 .zh-btn-primary {
@@ -77,6 +108,92 @@ body {
   border: 1px solid var(--card-border);
   color: var(--foreground);
 }
+@media (hover: hover) and (pointer: fine) {
+  .zh-btn-ghost:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* ---- Chips de filtre / segments (feed, leaderboard) ---- */
+.zh-chip {
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--card-border);
+  color: var(--muted);
+  font-weight: 600;
+  transition: background-color 0.16s ease, border-color 0.16s ease,
+    color 0.16s ease, transform 0.1s ease;
+}
+.zh-chip:active {
+  transform: scale(0.96);
+}
+@media (hover: hover) and (pointer: fine) {
+  .zh-chip:hover {
+    color: var(--foreground);
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+.zh-chip-on {
+  background: linear-gradient(180deg, #ffe07a 0%, #f6b81e 100%);
+  border-color: rgba(246, 184, 30, 0.9);
+  color: #241800;
+  font-weight: 800;
+  box-shadow: 0 8px 18px -10px rgba(246, 184, 30, 0.7);
+}
+@media (hover: hover) and (pointer: fine) {
+  .zh-chip-on:hover {
+    color: #241800;
+    background: linear-gradient(180deg, #ffe888 0%, #ffc42c 100%);
+    border-color: rgba(246, 184, 30, 0.9);
+  }
+}
+/* Variante neutre (période du leaderboard) */
+.zh-chip-on-soft {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.7);
+  color: var(--foreground);
+  font-weight: 800;
+}
+@media (hover: hover) and (pointer: fine) {
+  .zh-chip-on-soft:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+/* ---- Pastilles en surimpression sur les vignettes ---- */
+.zh-badge {
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  line-height: 1.5;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Squelettes de chargement ---- */
+.zh-skeleton {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.06) 30%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.06) 70%
+  );
+  background-size: 220% 100%;
+  animation: zh-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes zh-shimmer {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
 
 .zh-title {
   background: linear-gradient(180deg, #ffffff 0%, #b7c6ee 100%);
@@ -85,8 +202,31 @@ body {
   color: transparent;
 }
 
+/* Halo respirant derrière l'icône hero de la page d'accueil */
+.zh-glow {
+  animation: zh-breathe 5s ease-in-out infinite;
+}
+@keyframes zh-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.12);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-pulse {
+  .animate-pulse,
+  .zh-skeleton,
+  .zh-glow {
     animation: none;
+  }
+  .zh-card-interactive,
+  .zh-btn,
+  .zh-chip {
+    transition: none;
   }
 }

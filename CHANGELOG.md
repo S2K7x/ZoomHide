@@ -12,25 +12,108 @@ Format : une entrée par jour de routine automatisée, la plus récente en haut.
   sur la touche `Escape` — même garde-fou que le clic en dehors de la carte,
   déjà géré par le `onClick` de l'overlay.
 
-Pourquoi : c'était le seul item de code non bloqué du backlog (le manifest
-PWA reste bloqué faute d'outil de génération d'image PNG dans cet
-environnement — revérifié aujourd'hui : toujours aucun `convert`/`magick`,
-`PIL` ni `sharp` disponibles). La modale de signalement se fermait déjà au
-clic en dehors, mais un joueur au clavier (ou un lecteur d'écran) n'avait
-aucun moyen de la fermer sans la souris. Changement 100% front (un seul
-`useEffect`, aucune nouvelle requête ni RPC), zéro impact sur les quotas
-Supabase/Vercel. Aucune règle de jeu ni sécurité touchée. Audit sécurité
-Supabase (`get_advisors`) revérifié en amont : uniquement les avertissements
-déjà connus et acceptés (RLS "enabled no policy" sur `players`/`hides`/
-`attempts`/`reports`/`code_attempts`, tous verrouillés et accessibles
-uniquement via RPC `security definer` ; la vue `active_hides` reste
-`security definer` par conception pour exposer un sous-ensemble de colonnes
-sans jamais renvoyer `pos_x`/`pos_y`) — aucun nouvel item de sécurité,
-rien à traiter en priorité aujourd'hui. `npm run build` passe.
+Pourquoi : item d'accessibilité du backlog. La modale de signalement se
+fermait déjà au clic en dehors, mais un joueur au clavier (ou un lecteur
+d'écran) n'avait aucun moyen de la fermer sans la souris. Changement 100%
+front (un seul `useEffect`, aucune nouvelle requête ni RPC), zéro impact sur
+les quotas Supabase/Vercel. Aucune règle de jeu ni sécurité touchée. Audit
+sécurité Supabase (`get_advisors`) revérifié en amont : uniquement les
+avertissements déjà connus et acceptés (RLS "enabled no policy" sur
+`players`/`hides`/`attempts`/`reports`/`code_attempts`, tous verrouillés et
+accessibles uniquement via RPC `security definer` ; la vue `active_hides`
+reste `security definer` par conception pour exposer un sous-ensemble de
+colonnes sans jamais renvoyer `pos_x`/`pos_y`) — aucun nouvel item de
+sécurité, rien à traiter en priorité aujourd'hui. `npm run build` passe.
 
-Backlog : il ne reste que le manifest PWA (bloqué), l'indicateur de
-chargement sur `RevealShare.tsx`, l'index FK basse priorité (conditionnel),
-et le rappel de suivi manuel des quotas.
+Note de merge : cette branche a été ouverte depuis un `main` antérieur aux
+PR #23/#24 du 2026-08-07, et son environnement d'exécution ne voyait donc
+pas encore le manifest PWA livré entre-temps. La rédaction initiale de cette
+entrée le décrivait encore comme « bloqué faute d'outil de génération
+d'image » — corrigé ici à la résolution des conflits : le manifest existe
+bien (`app/manifest.ts` + icônes `next/og`), seul le remplacement par les
+vraies icônes de marque reste en backlog.
+
+Backlog : il reste l'indicateur de chargement sur `RevealShare.tsx`, le
+remplacement des icônes PWA générées par les vraies icônes de marque,
+l'index FK basse priorité (conditionnel), et le rappel de suivi manuel des
+quotas.
+## 2026-08-07
+
+**Design : rafraîchissement du système visuel partagé (`app/globals.css`).**
+
+- Accessibilité : anneau de focus clavier global (`:focus-visible`, ambre
+  `--ring`) — aucun état de focus visible n'existait jusqu'ici sur les
+  boutons, liens et chips, la navigation au clavier était invisible.
+- Nouvelles classes réutilisables dans `app/globals.css`, qui remplacent
+  des chaînes Tailwind dupliquées d'un écran à l'autre :
+  - `.zh-chip` / `.zh-chip-on` / `.zh-chip-on-soft` pour les filtres du feed
+    (`/play` : tri + « Hide tried/found ») et la période du leaderboard —
+    4 copies inline de la même combinaison `rounded-full px-3.5 py-1.5
+    border …` supprimées, avec `aria-pressed` ajouté sur chaque bascule.
+  - `.zh-badge` pour les pastilles en surimpression des vignettes du feed
+    (temps restant, 🔥 HARD, ✅ Found, 👀 Tried), désormais toutes de même
+    taille, même rayon et même bordure.
+  - `.zh-skeleton` : dégradé animé (shimmer) à la place des blocs
+    `bg-white/10 animate-pulse`, utilisé par les squelettes du feed, du
+    leaderboard et de la photo de jeu (`ZoomPanViewer`).
+  - `.zh-card-interactive` : soulèvement au survol des cartes cliquables
+    (vignette de hide, bouton retour du leaderboard).
+- États de survol sur `.zh-btn*` et `.zh-chip`, cantonnés à
+  `@media (hover: hover) and (pointer: fine)` pour ne pas laisser d'état
+  « collé » après un tap sur mobile. Toutes les nouvelles animations et
+  transitions sont neutralisées sous `prefers-reduced-motion: reduce`.
+- Page d'accueil : halo ambre respirant derrière l'icône hero
+  (`.zh-glow`), badge « 3 tries a day · new hides every day » sous le
+  sous-titre, et « How it works » passé en `<ol>` sémantique avec un fil
+  vertical dégradé reliant les 3 étapes.
+- `NavBar` : `aria-current="page"` sur l'onglet actif (absent jusqu'ici),
+  pastille active légèrement agrandie avec transition.
+- `/play` : titre « Active hides » ne passe plus sur deux lignes en 390px
+  (le lien privé passe de « 🔒 Have a code? » à « 🔒 Code » + `aria-label`
+  explicite). `/leaderboard` : marche du 1er mise en avant par un halo
+  ambre, ligne du joueur courant renforcée, bouton retour agrandi à 40px
+  (cible tactile) avec `aria-label`.
+
+Pourquoi : le système visuel (`zh-card`, `zh-btn*`) couvrait les surfaces et
+les boutons mais s'arrêtait là — chips, pastilles et squelettes étaient
+réécrits à la main sur chaque écran, avec des variantes qui divergeaient, et
+rien ne rendait le focus clavier visible. 100% CSS/JSX, aucune requête ni
+RPC ajoutée, aucune règle de jeu ni sécurité touchée.
+
+**UX mobile : PWA installable ("Add to Home Screen") via `app/manifest.ts`.**
+
+- Nouveau `app/manifest.ts` (convention Next.js `MetadataRoute.Manifest`,
+  servi automatiquement sur `/manifest.webmanifest` avec le lien `<head>`
+  correspondant ajouté par Next) : nom "Zoom Hide", description reprise du
+  `<meta description>` existant, `start_url: "/"`, `display: "standalone"`,
+  `background_color`/`theme_color` alignés sur `--bg-deep` (`#0a1024`) déjà
+  utilisé dans `app/globals.css`.
+- Icônes 192×192 et 512×512 (`app/icon-192/route.tsx`,
+  `app/icon-512/route.tsx`) générées avec `next/og` (`ImageResponse`, déjà
+  fourni par Next.js — aucune nouvelle dépendance) : une loupe dessinée en
+  CSS pur (cercle + poignée) sur le même dégradé ambre que l'icône hero de
+  `/`. Pas d'emoji (`next/og`/Satori ne les rend pas nativement sans police
+  externe) et pas d'assets de marque disponibles ailleurs — `logo.png` du
+  dossier `design/asset-prompts/` n'a pas encore été généré/déposé dans
+  `public/assets/` (toujours vide à ce jour). Ces icônes générées sont un
+  point de départ à remplacer une fois le vrai logo disponible.
+- Les deux routes sont marquées `export const dynamic = "force-static"` :
+  confirmé au build (`○ /icon-192`, `○ /icon-512`, `○ /manifest.webmanifest`
+  listées comme "Static" par `next build`), donc pré-rendues en fichiers
+  statiques servis par le CDN Vercel, aucun compute serveur par visite.
+
+Pourquoi : dernier item du backlog gagnant à être fait avant que les vrais
+mascot/logo PNG soient prêts — permet dès maintenant l'installation en app
+quasi-native sur mobile (icône sur l'écran d'accueil, pas de barre
+d'adresse), cohérent avec les balises Open Graph déjà en place
+(2026-07-17). Purement front/statique, zéro nouvelle dépendance, zéro
+risque sur les quotas Vercel/Supabase (pas de requête réseau ni de RPC),
+aucune règle de jeu ni sécurité touchée.
+
+Backlog : items retirés (manifest PWA ici, bouton « Reset zoom » livré la
+veille), 2 idées restantes (fermeture Échap de la modale de signalement,
+indicateur de chargement sur `RevealShare`), plus les 2 rappels de suivi
+non-code (quotas Supabase, index FK `reports.hide_id`).
 
 ## 2026-08-06
 
@@ -53,13 +136,11 @@ Changement 100% front (JSX/CSS + logique locale au composant), aucune
 nouvelle requête ni RPC, zéro impact sur les quotas Supabase/Vercel. Aucune
 règle de jeu ni sécurité touchée.
 
-L'autre item priorisé pour aujourd'hui, le manifest PWA
-(`app/manifest.json`, "Add to Home Screen"), reste bloqué : il nécessite des
-icônes PNG (192x192, 512x512 minimum) et aucun outil de génération/
-redimensionnement d'image (ImageMagick, sharp, Pillow) n'est disponible
-dans cet environnement d'exécution headless. Note ajoutée dans
-`ROADMAP.md` ; à traiter dès que des icônes peuvent être déposées dans
-`public/assets/`.
+L'autre item priorisé pour aujourd'hui, le manifest PWA ("Add to Home
+Screen"), était bloqué par l'absence d'outil de génération d'image
+(ImageMagick, sharp, Pillow) dans cet environnement headless pour produire
+les icônes PNG 192x192 / 512x512 ; il a été débloqué le lendemain via
+`next/og` (voir l'entrée 2026-08-07).
 
 ## 2026-08-05
 
