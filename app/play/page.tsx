@@ -104,7 +104,7 @@ export default function PlayFeed() {
   return (
     <div className="px-4 pt-8 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-black">Active hides</h1>
+        <h1 className="text-2xl font-black whitespace-nowrap">Active hides</h1>
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => fetchHides({ isManual: true })}
@@ -118,9 +118,10 @@ export default function PlayFeed() {
           </button>
           <Link
             href="/play/private"
+            aria-label="Play a private hide with a code"
             className="zh-btn zh-btn-ghost px-3.5 py-2 text-xs"
           >
-            🔒 Have a code?
+            🔒 Code
           </Link>
         </div>
       </div>
@@ -136,11 +137,8 @@ export default function PlayFeed() {
           <button
             key={k}
             onClick={() => setSort(k)}
-            className={`rounded-full px-3.5 py-1.5 border transition ${
-              sort === k
-                ? "bg-gradient-to-b from-amber-300 to-amber-500 text-black border-amber-400 font-bold"
-                : "border-white/15 text-white/60"
-            }`}
+            aria-pressed={sort === k}
+            className={`zh-chip ${sort === k ? "zh-chip-on" : ""}`}
           >
             {label}
           </button>
@@ -148,11 +146,7 @@ export default function PlayFeed() {
         <button
           onClick={toggleHideDone}
           aria-pressed={hideDone}
-          className={`rounded-full px-3.5 py-1.5 border transition ${
-            hideDone
-              ? "bg-gradient-to-b from-amber-300 to-amber-500 text-black border-amber-400 font-bold"
-              : "border-white/15 text-white/60"
-          }`}
+          className={`zh-chip ${hideDone ? "zh-chip-on" : ""}`}
         >
           🙈 Hide tried/found
         </button>
@@ -161,13 +155,13 @@ export default function PlayFeed() {
       {loading ? (
         <div className="grid grid-cols-2 gap-3" aria-label="Loading hides">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="zh-card overflow-hidden animate-pulse">
-              <div className="w-full aspect-square bg-white/10" />
+            <div key={i} className="zh-card overflow-hidden">
+              <div className="w-full aspect-square zh-skeleton" />
               <div className="p-2.5 flex items-center gap-2">
-                <div className="w-[26px] h-[26px] rounded-full bg-white/10 shrink-0" />
+                <div className="w-[26px] h-[26px] rounded-full zh-skeleton shrink-0" />
                 <div className="flex-1 flex flex-col gap-1.5 py-0.5">
-                  <div className="h-2.5 w-3/5 rounded bg-white/10" />
-                  <div className="h-2 w-4/5 rounded bg-white/10" />
+                  <div className="h-2.5 w-3/5 rounded zh-skeleton" />
+                  <div className="h-2 w-4/5 rounded zh-skeleton" />
                 </div>
               </div>
             </div>
@@ -206,7 +200,7 @@ export default function PlayFeed() {
             <Link
               key={h.id}
               href={`/play/${h.id}`}
-              className="zh-card overflow-hidden active:scale-[0.97] transition"
+              className="zh-card zh-card-interactive overflow-hidden"
             >
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -216,10 +210,10 @@ export default function PlayFeed() {
                   className="w-full aspect-square object-cover"
                   loading="lazy"
                 />
-                <span className="absolute top-2 right-2 rounded-full bg-black/55 backdrop-blur text-[11px] font-semibold px-2 py-0.5">
+                <span className="zh-badge absolute top-2 right-2">
                   ⏳ {timeLeft(h.expires_at)}
                 </span>
-                <span className="absolute bottom-2 left-2 grid place-items-center w-8 h-8 rounded-xl bg-black/55 backdrop-blur">
+                <span className="absolute bottom-2 left-2 grid place-items-center w-8 h-8 rounded-xl bg-black/55 backdrop-blur border border-white/12">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={shapeDataUrl(h.sticker_id, HINT_COLOR)}
@@ -228,16 +222,16 @@ export default function PlayFeed() {
                   />
                 </span>
                 {h.fail_pct != null && h.fail_pct >= 60 && (
-                  <span className="absolute top-2 left-2 rounded-full bg-gradient-to-b from-rose-400 to-rose-600 text-[10px] font-black px-2 py-0.5">
+                  <span className="zh-badge absolute top-2 left-2 bg-gradient-to-b from-rose-400 to-rose-600 border-rose-300/40">
                     🔥 HARD
                   </span>
                 )}
                 {statuses[h.id] === "found" ? (
-                  <span className="absolute bottom-2 right-2 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600 text-[10px] font-black px-2 py-0.5">
+                  <span className="zh-badge absolute bottom-2 right-2 bg-gradient-to-b from-emerald-400 to-emerald-600 border-emerald-300/40 text-black">
                     ✅ Found
                   </span>
                 ) : statuses[h.id] === "attempted" ? (
-                  <span className="absolute bottom-2 right-2 rounded-full bg-black/55 backdrop-blur text-[10px] font-semibold px-2 py-0.5">
+                  <span className="zh-badge absolute bottom-2 right-2 font-semibold">
                     👀 Tried
                   </span>
                 ) : null}

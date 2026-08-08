@@ -38,7 +38,7 @@ export default function NavBar() {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50">
       <div className="mx-auto max-w-md px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2">
-        <div className="grid grid-cols-4 rounded-3xl border border-white/10 bg-[#0e1735]/90 backdrop-blur-xl shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.9)]">
+        <div className="grid grid-cols-4 rounded-3xl border border-white/10 bg-[#0e1735]/85 backdrop-blur-xl shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.9)] ring-1 ring-inset ring-white/5">
           {LINKS.map((l) => {
             const active = isActive(l.href);
             const showActiveHideDot = l.href === "/create" && hasActiveHide && !active;
@@ -46,12 +46,13 @@ export default function NavBar() {
               <Link
                 key={l.href}
                 href={l.href}
-                className="flex flex-col items-center gap-1 py-2.5"
+                aria-current={active ? "page" : undefined}
+                className="flex flex-col items-center gap-1 py-2.5 rounded-2xl"
               >
                 <span
-                  className={`relative grid place-items-center w-10 h-10 rounded-2xl text-lg transition ${
+                  className={`relative grid place-items-center w-10 h-10 rounded-2xl text-lg transition duration-200 ${
                     active
-                      ? "bg-gradient-to-b from-amber-300 to-amber-500 text-black shadow-[0_8px_18px_-8px_rgba(246,184,30,0.7)]"
+                      ? "bg-gradient-to-b from-amber-300 to-amber-500 text-black scale-105 ring-1 ring-white/30 shadow-[0_8px_18px_-8px_rgba(246,184,30,0.7)]"
                       : "text-white/55"
                   }`}
                 >
@@ -64,7 +65,7 @@ export default function NavBar() {
                   )}
                 </span>
                 <span
-                  className={`text-[11px] font-semibold ${
+                  className={`text-[11px] font-semibold transition-colors ${
                     active ? "text-white" : "text-white/45"
                   }`}
                 >
