@@ -16,9 +16,10 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   pratique, et `reports` n'est lu nulle part (pas de dashboard modération).
   À ajouter seulement si un vrai `delete from hides` ou une lecture par
   `hide_id` apparaît un jour.
-- Accessibilité : fermeture de la modale « Report this hide »
-  (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
-  dehors déjà géré.
+- UX : remplacer les icônes PWA générées via `next/og`
+  (`app/icon-192/route.tsx`, `app/icon-512/route.tsx`, loupe dessinée en CSS)
+  par les vraies icônes de marque, une fois `public/assets/logo.png`
+  disponible (dossier encore vide à ce jour).
 - UX : petit indicateur de chargement (spinner/texte) le temps que le
   canvas de `RevealShare.tsx` génère l'image story, actuellement aucun
   retour visuel entre l'apparition de l'écran « Found! » et celle du bouton
@@ -33,6 +34,9 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-08** — Fermeture de la modale « Report this hide »
+  (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
+  dehors déjà géré.
 - **2026-08-07** — Design : rafraîchissement du système visuel partagé
   (`app/globals.css`) — anneau de focus clavier global (`:focus-visible`),
   classes réutilisables `.zh-chip`/`.zh-badge`/`.zh-skeleton` (shimmer)/

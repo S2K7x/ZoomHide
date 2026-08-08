@@ -2,6 +2,41 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-08
+
+**Accessibilité : fermeture de la modale « Report this hide » via la touche Échap.**
+
+- `components/HideGame.tsx` : nouvel effet qui écoute `keydown` sur `window`
+  tant que la modale de signalement (`showReport`) est ouverte et qu'aucun
+  envoi n'est en cours (`reportSubmitting`), et ferme la modale (`setShowReport(false)`)
+  sur la touche `Escape` — même garde-fou que le clic en dehors de la carte,
+  déjà géré par le `onClick` de l'overlay.
+
+Pourquoi : item d'accessibilité du backlog. La modale de signalement se
+fermait déjà au clic en dehors, mais un joueur au clavier (ou un lecteur
+d'écran) n'avait aucun moyen de la fermer sans la souris. Changement 100%
+front (un seul `useEffect`, aucune nouvelle requête ni RPC), zéro impact sur
+les quotas Supabase/Vercel. Aucune règle de jeu ni sécurité touchée. Audit
+sécurité Supabase (`get_advisors`) revérifié en amont : uniquement les
+avertissements déjà connus et acceptés (RLS "enabled no policy" sur
+`players`/`hides`/`attempts`/`reports`/`code_attempts`, tous verrouillés et
+accessibles uniquement via RPC `security definer` ; la vue `active_hides`
+reste `security definer` par conception pour exposer un sous-ensemble de
+colonnes sans jamais renvoyer `pos_x`/`pos_y`) — aucun nouvel item de
+sécurité, rien à traiter en priorité aujourd'hui. `npm run build` passe.
+
+Note de merge : cette branche a été ouverte depuis un `main` antérieur aux
+PR #23/#24 du 2026-08-07, et son environnement d'exécution ne voyait donc
+pas encore le manifest PWA livré entre-temps. La rédaction initiale de cette
+entrée le décrivait encore comme « bloqué faute d'outil de génération
+d'image » — corrigé ici à la résolution des conflits : le manifest existe
+bien (`app/manifest.ts` + icônes `next/og`), seul le remplacement par les
+vraies icônes de marque reste en backlog.
+
+Backlog : il reste l'indicateur de chargement sur `RevealShare.tsx`, le
+remplacement des icônes PWA générées par les vraies icônes de marque,
+l'index FK basse priorité (conditionnel), et le rappel de suivi manuel des
+quotas.
 ## 2026-08-07
 
 **Design : rafraîchissement du système visuel partagé (`app/globals.css`).**
