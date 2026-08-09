@@ -137,11 +137,24 @@ export default function RevealShare(props: Props) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <canvas
-        ref={canvasRef}
-        className="w-40 rounded-xl border border-white/20"
-        aria-label="Story preview"
-      />
+      <div
+        className="relative w-40 overflow-hidden rounded-xl border border-white/20"
+        style={{ aspectRatio: "9 / 16" }}
+      >
+        <canvas
+          ref={canvasRef}
+          className="h-full w-full"
+          aria-label="Story preview"
+        />
+        {!ready && (
+          <div
+            aria-label="Generating preview"
+            className="absolute inset-0 grid place-items-center zh-skeleton"
+          >
+            <span className="text-2xl opacity-30">📤</span>
+          </div>
+        )}
+      </div>
       {ready && (
         <button
           onClick={share}

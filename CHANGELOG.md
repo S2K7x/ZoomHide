@@ -2,6 +2,43 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-09
+
+**UX : indicateur de chargement sur la génération de l'image story (`RevealShare.tsx`).**
+
+- `components/RevealShare.tsx` : le canvas (dessin asynchrone de la photo +
+  sticker + score, dans un `useEffect`) était auparavant affiché vide le
+  temps que le dessin se termine (`await Promise.all([...])` pour charger la
+  photo et le sticker, plusieurs opérations `ctx.drawImage`/dégradés
+  ensuite), avec le bouton « Share to story » qui n'apparaissait qu'une fois
+  prêt (`ready`) — aucun repère visuel entre les deux, ce qui pouvait laisser
+  croire à un blocage sur mobile lent. Le canvas est maintenant enveloppé
+  dans un conteneur à ratio 9:16 stable (`aspectRatio: "9 / 16"`, évite tout
+  effondrement de hauteur avant que le canvas ne prenne ses dimensions
+  réelles) avec une superposition `.zh-skeleton` (shimmer déjà existant,
+  utilisé par `/play`, `/leaderboard`, `ZoomPanViewer`) tant que `!ready`,
+  masquée dès que le dessin est terminé.
+
+Pourquoi : dernier item de code du backlog. Changement 100% front (CSS/JSX
+uniquement, réutilise la classe `.zh-skeleton` déjà établie le 2026-08-07 et
+donc déjà couverte par la règle globale `prefers-reduced-motion`), aucune
+nouvelle requête ni RPC, zéro impact sur les quotas Supabase/Vercel. Audit
+sécurité Supabase (`get_advisors`) revérifié en amont : uniquement les
+avertissements déjà connus et acceptés (RLS "enabled no policy" sur
+`players`/`hides`/`attempts`/`reports`/`code_attempts`, RPC `security
+definer` exposées à `anon`/`authenticated` par design puisque le jeu n'a pas
+d'authentification, vue `active_hides` `security definer` par conception) —
+aucun nouvel item de sécurité, rien à traiter en priorité aujourd'hui.
+Aucune règle de jeu touchée (le calcul de succès et la position du sticker
+restent exclusivement côté serveur ; l'image générée ici ne fait que
+redessiner ce que le joueur voit déjà après une tentative réussie).
+`npm run build` passe.
+
+Backlog : ne restent que le remplacement des icônes PWA générées par les
+vraies icônes de marque (bloqué faute de `public/assets/logo.png`), l'index
+FK basse priorité (conditionnel, sans impact réel actuellement), et le
+rappel de suivi manuel des quotas Supabase.
+
 ## 2026-08-08
 
 **Accessibilité : fermeture de la modale « Report this hide » via la touche Échap.**
