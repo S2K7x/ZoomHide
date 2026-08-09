@@ -20,10 +20,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   (`app/icon-192/route.tsx`, `app/icon-512/route.tsx`, loupe dessinée en CSS)
   par les vraies icônes de marque, une fois `public/assets/logo.png`
   disponible (dossier encore vide à ce jour).
-- UX : petit indicateur de chargement (spinner/texte) le temps que le
-  canvas de `RevealShare.tsx` génère l'image story, actuellement aucun
-  retour visuel entre l'apparition de l'écran « Found! » et celle du bouton
-  « Share to story » (asynchrone, peut prendre un instant sur mobile lent).
 - Note : l'index composite sur `attempts(hide_id, player_id, ...)` évoqué
   précédemment existe déjà (`idx_attempts_daily`, migration `001_init.sql`)
   — retiré du backlog, rien à faire.
@@ -34,6 +30,10 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-09** — Indicateur de chargement (squelette `.zh-skeleton`) sur
+  `components/RevealShare.tsx`, affiché à la place du canvas vide pendant
+  la génération de l'image story (photo + sticker + score dessinés en
+  asynchrone), le temps que `ready` passe à `true`.
 - **2026-08-08** — Fermeture de la modale « Report this hide »
   (`components/HideGame.tsx`) via la touche Échap, en plus du clic en
   dehors déjà géré.
