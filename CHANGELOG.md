@@ -2,6 +2,47 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-10
+
+**Gameplay : rang personnel affiché sur `/leaderboard` hors du top 50.**
+
+- Nouvelle RPC `get_my_rank(p_player_id, p_board, p_period)`
+  (`supabase/migrations/011_my_leaderboard_rank.sql`) : recalcule le même
+  classement que `get_leaderboard` (mêmes formules — 10 pts/raté provoqué +
+  500/Cachette Parfaite pour les hiders, 100 - 25/raté préalable - 1pt/s
+  (cap 50, min 10) par trouvaille pour les seekers — et même filtre de
+  période), via `rank() over (...)`, sans le `limit 50` de `get_leaderboard`.
+  Ne renvoie que la ligne du joueur demandé (rang + score), jamais le
+  classement des autres joueurs.
+- `app/leaderboard/page.tsx` : après le chargement du top 50, si le joueur
+  courant n'y figure pas, un second appel va chercher uniquement son rang
+  (aucune requête si le joueur est déjà visible dans le top 50), affiché en
+  ligne « You » distincte (bordure en pointillés ambre) sous le classement.
+
+Pourquoi : `get_leaderboard` (`001_init.sql`) tronque à 50 lignes depuis le
+début — un joueur classé au-delà n'avait aucun moyen de connaître sa
+position ni son score, alors que le reste du produit (badge "cachette
+active", indicateurs "déjà tenté/trouvé"...) donne systématiquement un
+retour personnel au joueur. Item choisi car aucun bug/faille de sécurité
+identifié aujourd'hui (audit `get_advisors` revérifié en amont : mêmes
+avertissements déjà connus et acceptés que les jours précédents, `get_my_rank`
+n'en ajoute aucun de nouveau), rien en `## En cours`, et le seul item de
+code restant du backlog (remplacement des icônes PWA) reste bloqué faute de
+`public/assets/logo.png`.
+
+Contraintes respectées : coût de la nouvelle RPC du même ordre de grandeur
+qu'un appel à `get_leaderboard` existant (agrégation complète sur
+`hides`/`attempts`, sans le `limit`), mais appelée au plus une fois par
+affichage de `/leaderboard` et seulement quand nécessaire — pas d'impact
+notable sur les quotas Supabase Free tier. Calcul du score et du rang
+exclusivement côté serveur (RPC `security definer`, comme le reste du
+projet) ; aucune donnée sur les autres joueurs n'est exposée. Aucune règle
+de jeu existante modifiée. Zéro nouvelle dépendance. `npm run build` passe ;
+`npm run lint` inchangé (mêmes 10 erreurs `react-hooks/set-state-in-effect`/
+`react-hooks/purity` déjà présentes sur `main` avant ce changement, propres
+à une règle eslint plus stricte sur un pattern utilisé dans tout le repo —
+aucune nouvelle erreur introduite par ce fichier).
+
 ## 2026-08-09
 
 **UX : indicateur de chargement sur la génération de l'image story (`RevealShare.tsx`).**
