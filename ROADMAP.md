@@ -30,6 +30,15 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-10** — Rang personnel sur `/leaderboard` quand le joueur est
+  hors du top 50 renvoyé par `get_leaderboard` (`app/leaderboard/page.tsx`).
+  Nouvelle RPC `get_my_rank` (`supabase/migrations/011_my_leaderboard_rank.sql`)
+  qui recalcule le même classement (mêmes formules de score, même filtre de
+  période) sans `limit`, mais ne renvoie que la ligne du joueur demandé —
+  jamais les autres joueurs. Appelée uniquement quand le joueur n'apparaît
+  pas déjà dans les 50 lignes de `get_leaderboard` (aucune requête
+  supplémentaire sinon), et affichée comme une ligne « You » distincte
+  (bordure en pointillés) sous le classement visible.
 - **2026-08-09** — Indicateur de chargement (squelette `.zh-skeleton`) sur
   `components/RevealShare.tsx`, affiché à la place du canvas vide pendant
   la génération de l'image story (photo + sticker + score dessinés en

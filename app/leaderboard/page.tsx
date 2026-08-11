@@ -15,6 +15,8 @@ type Row = {
   perfect_hides?: number;
 };
 
+type MyRank = { rank: number; score: number } | null;
+
 export default function LeaderboardPage() {
   const [board, setBoard] = useState<"hiders" | "seekers">("hiders");
   const [period, setPeriod] = useState<"week" | "all">("week");
@@ -22,6 +24,7 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [me, setMe] = useState("");
+  const [myRank, setMyRank] = useState<MyRank>(null);
 
   useEffect(() => {
     setMe(getPlayerId());
@@ -29,6 +32,7 @@ export default function LeaderboardPage() {
 
   const fetchBoard = async () => {
     setLoading(true);
+    setMyRank(null);
     const { data, error: fetchError } = await supabase.rpc("get_leaderboard", {
       p_board: board,
       p_period: period,
@@ -39,8 +43,23 @@ export default function LeaderboardPage() {
       return;
     }
     setError(false);
-    setRows((data as Row[]) ?? []);
+    const list = (data as Row[]) ?? [];
+    setRows(list);
     setLoading(false);
+
+    // Le top 50 ne suffit pas à situer un joueur classé plus loin — on ne
+    // va chercher son rang exact que dans ce cas (pas de requête sinon).
+    // `getPlayerId()` direct (pas l'état `me`, qui peut ne pas encore être
+    // hydraté au premier rendu) : lecture localStorage, sûre dans un effet.
+    const playerId = getPlayerId();
+    if (list.length > 0 && !list.some((r) => r.player_id === playerId)) {
+      const { data: rankData } = await supabase.rpc("get_my_rank", {
+        p_player_id: playerId,
+        p_board: board,
+        p_period: period,
+      });
+      setMyRank((rankData as MyRank) ?? null);
+    }
   };
 
   useEffect(() => {
@@ -218,6 +237,14 @@ export default function LeaderboardPage() {
               </li>
             ))}
           </ol>
+
+          {myRank && (
+            <div className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-dashed border-amber-400/40 bg-amber-400/10">
+              <span className="w-6 text-center font-black text-amber-300">#{myRank.rank}</span>
+              <span className="flex-1 text-sm font-semibold text-amber-200">You</span>
+              <b className="text-amber-300">{myRank.score}</b>
+            </div>
+          )}
         </>
       )}
     </div>
