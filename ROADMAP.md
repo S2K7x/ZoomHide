@@ -30,6 +30,15 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-11** — Bug : la modale « Report this hide » de
+  `components/HideGame.tsx` ignorait l'`error` retourné par
+  `supabase.rpc("report_hide", ...)` et affichait toujours « Thanks, the
+  hide has been reported. », même en cas d'échec réel de l'envoi (coupure
+  réseau, erreur serveur). Ajout d'un état d'erreur dédié avec message
+  explicite et bouton « Send » réactivé pour réessayer, sans perdre le
+  texte déjà saisi — même pattern que la gestion d'erreur déjà en place sur
+  `/play` et `/leaderboard` (2026-08-01), appliqué ici au flux de report
+  qui l'avait manqué.
 - **2026-08-09** — Indicateur de chargement (squelette `.zh-skeleton`) sur
   `components/RevealShare.tsx`, affiché à la place du canvas vide pendant
   la génération de l'image story (photo + sticker + score dessinés en

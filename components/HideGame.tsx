@@ -103,6 +103,7 @@ export default function HideGame({
   const [reportReason, setReportReason] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportDone, setReportDone] = useState(false);
+  const [reportError, setReportError] = useState(false);
   const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -376,7 +377,10 @@ export default function HideGame({
             {linkCopied ? "✅ Link copied!" : "🔗 Share this hide"}
           </button>
           <button
-            onClick={() => setShowReport(true)}
+            onClick={() => {
+              setReportError(false);
+              setShowReport(true);
+            }}
             className="text-xs text-white/40 underline"
           >
             🚩 Report this hide
@@ -419,6 +423,11 @@ export default function HideGame({
                   rows={3}
                   className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-sm resize-none"
                 />
+                {reportError && (
+                  <p className="text-xs text-rose-300 text-center">
+                    ⚠️ Couldn&apos;t send the report. Try again.
+                  </p>
+                )}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowReport(false)}
@@ -430,12 +439,17 @@ export default function HideGame({
                   <button
                     onClick={async () => {
                       setReportSubmitting(true);
-                      await supabase.rpc("report_hide", {
+                      setReportError(false);
+                      const { error } = await supabase.rpc("report_hide", {
                         p_hide_id: hideId,
                         p_reporter_id: getPlayerId(),
                         p_reason: reportReason,
                       });
                       setReportSubmitting(false);
+                      if (error) {
+                        setReportError(true);
+                        return;
+                      }
                       setReportDone(true);
                     }}
                     disabled={reportSubmitting || !reportReason.trim()}
