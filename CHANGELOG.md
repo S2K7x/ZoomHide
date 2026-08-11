@@ -2,6 +2,31 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-11
+
+**Bug : faux positif de succès sur « Report this hide » en cas d'échec réel de l'envoi.**
+
+- `components/HideGame.tsx` : le bouton « Send » de la modale de report
+  appelait `await supabase.rpc("report_hide", ...)` sans jamais lire l'
+  `error` retourné, puis passait inconditionnellement à l'écran « Thanks,
+  the hide has been reported. ». En cas de coupure réseau ou d'erreur
+  serveur, le joueur croyait donc son signalement envoyé alors qu'il ne
+  l'était pas, sans aucun moyen de le savoir ou de réessayer.
+- Ajout d'un état `reportError` : en cas d'`error` non nul, affichage d'un
+  message « ⚠️ Couldn't send the report. Try again. » dans la modale, le
+  bouton « Send » redevient actif et le texte déjà saisi est conservé (pas
+  de perte de la saisie). L'état d'erreur est réinitialisé à l'ouverture de
+  la modale.
+
+Pourquoi : même bug déjà corrigé le 2026-08-01 sur `/play` et
+`/leaderboard` (`const { data } = await ...` sans vérifier `error`), mais le
+flux de report de `HideGame.tsx` l'avait manqué à l'époque. Un signalement
+silencieusement perdu est plus grave qu'un simple défaut d'affichage :
+c'est un canal de modération qui échoue sans que personne ne s'en rende
+compte. Changement 100% front (aucune nouvelle RPC, `report_hide` déjà
+existante et inchangée), aucun impact sur les quotas Supabase/Vercel, la
+sécurité (RLS/RPC `security definer` inchangées) ou les règles de jeu.
+
 ## 2026-08-09
 
 **UX : indicateur de chargement sur la génération de l'image story (`RevealShare.tsx`).**
