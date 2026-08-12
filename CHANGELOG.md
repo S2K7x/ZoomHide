@@ -2,6 +2,61 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-12
+
+**Sécurité : les fonctions de maintenance `expire_hides()` et
+`cleanup_old_photos()` ne sont plus appelables publiquement.**
+
+- `supabase/migrations/012_restrict_maintenance_functions.sql` : `revoke
+  execute ... from public, anon, authenticated` sur les deux fonctions.
+
+Le problème : dans `001_init.sql`, le garde-fou `revoke execute on all
+functions in schema public from public, anon, authenticated` (ligne 352) est
+exécuté **avant** la création de `expire_hides()` (ligne 379) et
+`cleanup_old_photos()` (ligne 401), en fin de fichier avec les jobs cron. Les
+deux fonctions ont donc gardé le `grant execute to public` par défaut de
+Postgres, complété par les default privileges Supabase (`anon`,
+`authenticated`) — vérifié dans la base : `proacl` valait `=X/postgres |
+postgres=X/postgres | anon=X/postgres | authenticated=X/postgres |
+service_role=X/postgres`. Concrètement, n'importe qui muni de la clé publique
+(présente dans le bundle front, par conception) pouvait appeler
+`POST /rest/v1/rpc/expire_hides` et `POST /rest/v1/rpc/cleanup_old_photos`.
+
+Pourquoi ça compte : `cleanup_old_photos()` exécute un `delete from
+storage.objects` joint aux `hides` par `like '%' || o.name` (scan du bucket ×
+cachettes expirées à chaque appel), `expire_hides()` un `update` sur toute la
+table `hides` avec deux sous-requêtes corrélées sur `attempts` par ligne.
+Aucune des deux ne permet de tricher (`expire_hides` ne touche que les
+cachettes dont `expires_at <= now()`, donc pas d'expiration anticipée
+possible ; `cleanup_old_photos` ne supprime que ce que le cron aurait
+supprimé), mais ce sont deux écritures déclenchables par un anonyme et un
+levier gratuit d'épuisement du compute Postgres du Free tier — appels
+illimités, aucune limitation de débit côté RPC. Aucun appel côté client ne les
+référence (recherche `supabase.rpc(...)` sur tout le repo : les 11 RPC
+appelées sont `create_hide`, `delete_hide`, `get_hide_by_code`,
+`get_hide_detail`, `get_hide_statuses`, `get_leaderboard`,
+`get_my_active_hide`, `get_my_rank`, `has_active_hide`, `report_hide`,
+`try_attempt`) : elles ne servent qu'à pg_cron.
+
+Vérifications faites : les jobs `expire-hides` et `cleanup-photos`
+(`cron.job`) tournent sous l'utilisateur `postgres`, propriétaire des
+fonctions — leur exécution planifiée est donc intacte. Après migration,
+`has_function_privilege('anon'|'authenticated', ...)` renvoie `false` sur les
+deux, et un test `set local role anon` confirme `insufficient_privilege` sur
+`expire_hides()`/`cleanup_old_photos()` tout en laissant passer
+`get_leaderboard()` et `has_active_hide()` (aucune régression sur les RPC de
+jeu). L'advisor sécurité Supabase ne liste plus ces deux fonctions dans
+`anon_security_definer_function_executable` /
+`authenticated_security_definer_function_executable` ; ne restent que les RPC
+publiques par conception et les avertissements déjà connus et acceptés (RLS
+"enabled no policy" sur les tables, vue `active_hides` en `security definer`).
+
+Item choisi car la routine donne la priorité absolue aux failles de sécurité,
+devant le backlog. Changement 100% SQL, zéro ligne de code applicatif, aucune
+règle de jeu modifiée, aucune nouvelle dépendance, impact quotas nul (au
+contraire : ferme un vecteur de consommation compute). `npm run build` passe
+(12 routes générées).
+
 ## 2026-08-10
 
 **Gameplay : rang personnel affiché sur `/leaderboard` hors du top 50.**

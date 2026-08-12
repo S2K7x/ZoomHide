@@ -5,6 +5,18 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 
 ## Backlog
 
+- Sécurité (process, à refaire après chaque migration qui ajoute une fonction) :
+  vérifier que les nouvelles fonctions du schéma `public` ne sont pas
+  exécutables par `anon`/`authenticated` sans grant explicite. Le `revoke
+  execute on all functions` de `001_init.sql` ne couvre que les fonctions
+  existant au moment où il tourne, et les default privileges Supabase donnent
+  `execute` à `anon`/`authenticated` sur toute nouvelle fonction. Contrôle :
+  `select proname, has_function_privilege('anon', oid, 'EXECUTE') from pg_proc
+  where pronamespace = 'public'::regnamespace;` — comparer à la liste des RPC
+  réellement appelées par l'app.
+- UX : mémoriser le tri du feed `/play` (Newest/Hardest/Expiring) en
+  `localStorage`, comme le filtre « 🙈 Hide tried/found » déjà persistant
+  (`zh_hide_done`) — le tri repart sur « Newest » à chaque visite.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
@@ -30,6 +42,17 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-12** — Sécurité : révocation du droit d'exécution `anon`/
+  `authenticated`/`public` sur les deux fonctions de maintenance planifiées
+  `expire_hides()` et `cleanup_old_photos()`
+  (`supabase/migrations/012_restrict_maintenance_functions.sql`). Elles étaient
+  appelables par n'importe qui via PostgREST (`POST /rest/v1/rpc/...`) parce
+  que le `revoke execute on all functions` de `001_init.sql` s'exécute avant
+  leur création. `cleanup_old_photos()` est un `delete from storage.objects`,
+  `expire_hides()` un `update` sur toute la table `hides` : écritures
+  déclenchables par un anonyme + levier d'épuisement du compute Free tier.
+  Les jobs pg_cron tournent sous `postgres`, donc inchangés ; aucune RPC de
+  jeu touchée.
 - **2026-08-10** — Rang personnel sur `/leaderboard` quand le joueur est
   hors du top 50 renvoyé par `get_leaderboard` (`app/leaderboard/page.tsx`).
   Nouvelle RPC `get_my_rank` (`supabase/migrations/011_my_leaderboard_rank.sql`)
