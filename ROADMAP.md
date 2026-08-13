@@ -13,7 +13,25 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   `execute` à `anon`/`authenticated` sur toute nouvelle fonction. Contrôle :
   `select proname, has_function_privilege('anon', oid, 'EXECUTE') from pg_proc
   where pronamespace = 'public'::regnamespace;` — comparer à la liste des RPC
-  réellement appelées par l'app.
+  réellement appelées par l'app. **Le 2026-08-13, ce contrôle a débusqué
+  `upsert_player` (grant explicite hérité du prototype, jamais appelée côté
+  client) — corrigé.** À l'issue de ce contrôle, la liste des fonctions
+  exécutables par `anon` doit être exactement les 11 RPC appelées par le
+  client : `create_hide`, `delete_hide`, `get_hide_by_code`, `get_hide_detail`,
+  `get_hide_statuses`, `get_leaderboard`, `get_my_active_hide`, `get_my_rank`,
+  `has_active_hide`, `report_hide`, `try_attempt`.
+- Sécurité (à étudier, priorité moyenne) : plus largement, l'identité d'un
+  joueur n'est qu'un `player_id` de localStorage, et `get_leaderboard` renvoie
+  publiquement celui des 50 meilleurs. Toute RPC qui accepte un `p_player_id`
+  sans preuve de possession est donc usurpable par quiconque lit le
+  classement. Audit à faire RPC par RPC : lesquelles font une écriture ou
+  révèlent quelque chose sur la base du seul `p_player_id` ? (`report_hide`
+  et `delete_hide` sont les premières à regarder — `delete_hide` vérifie bien
+  `creator_id`, mais le `creator_id` d'une cachette peut lui aussi être connu
+  via le classement des cacheurs.) La vraie correction serait de ne plus
+  exposer `player_id` dans `get_leaderboard` (renvoyer un booléen `is_me`
+  calculé côté serveur), voire de signer l'identité — trop gros pour une
+  routine quotidienne, à découper.
 - UX : mémoriser le tri du feed `/play` (Newest/Hardest/Expiring) en
   `localStorage`, comme le filtre « 🙈 Hide tried/found » déjà persistant
   (`zh_hide_done`) — le tri repart sur « Newest » à chaque visite.
@@ -42,6 +60,18 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-13** — Sécurité : révocation du droit d'exécution `anon`/
+  `authenticated`/`public` sur `upsert_player(text, text)`
+  (`supabase/migrations/013_restrict_upsert_player.sql`). Elle était exposée
+  via PostgREST par un `grant execute` explicite de `001_init.sql` (ligne 353)
+  alors qu'aucun appel côté client ne la référence. Comme elle fait un
+  `insert ... on conflict (id) do update set name = excluded.name` sans aucune
+  vérification de propriété, et que `get_leaderboard` publie le `player_id`
+  des 50 meilleurs joueurs, n'importe quel visiteur pouvait renommer un joueur
+  du classement (pseudo affiché sur `/leaderboard`, sur les cartes du feed et
+  sur l'image de partage) — et créer un nombre illimité de lignes `players`.
+  Les appels internes depuis `create_hide`/`try_attempt` (security definer,
+  propriétaire `postgres`) sont inchangés, vérifié en base.
 - **2026-08-12** — Sécurité : révocation du droit d'exécution `anon`/
   `authenticated`/`public` sur les deux fonctions de maintenance planifiées
   `expire_hides()` et `cleanup_old_photos()`

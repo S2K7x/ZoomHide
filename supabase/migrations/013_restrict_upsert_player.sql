@@ -1,0 +1,33 @@
+-- Sécurité : `upsert_player(text, text)` était exécutable par `anon` et
+-- `authenticated` via PostgREST (`POST /rest/v1/rpc/upsert_player`), alors
+-- qu'aucun appel côté client ne la référence.
+--
+-- Cause : `001_init.sql` ligne 353 lui accorde explicitement
+-- `grant execute ... to anon, authenticated`, juste après le `revoke execute on
+-- all functions`. Ce grant était nécessaire à l'époque du prototype ; il ne
+-- l'est plus (et ne l'a jamais été) : `upsert_player` n'est appelée que depuis
+-- `create_hide` et `try_attempt`, deux fonctions `security definer` appartenant
+-- à `postgres`. Un appel imbriqué s'exécute sous le propriétaire, pas sous
+-- `anon` — le grant public est donc inutile au fonctionnement du jeu.
+--
+-- Impact : la fonction fait
+--   insert into players (id, name) values (...)
+--   on conflict (id) do update set name = excluded.name
+-- sans aucune vérification de propriété — le `p_player_id` est simplement un
+-- identifiant généré côté client (localStorage), il n'y a pas d'auth. Or
+-- `get_leaderboard` renvoie publiquement le `player_id` des 50 meilleurs
+-- joueurs (le client s'en sert pour surligner la ligne « you »). N'importe qui
+-- pouvait donc lire le classement, récupérer l'id d'un joueur et le renommer
+-- arbitrairement : le pseudo s'affiche sur `/leaderboard`, sur chaque carte du
+-- feed public (`active_hides.creator_name`) et sur l'image de partage. Soit du
+-- vandalisme / de l'usurpation de pseudo à la portée de n'importe quel visiteur.
+-- Accessoirement, la branche `insert` permettait de créer un nombre illimité de
+-- lignes `players` (tout id de 8 à 64 caractères), donc de gonfler la base du
+-- Free tier gratuitement.
+--
+-- Correctif : révocation de l'exécution pour `public`, `anon` et
+-- `authenticated`. `create_hide` et `try_attempt` continuent d'enregistrer /
+-- mettre à jour le pseudo du joueur exactement comme avant (appel interne).
+
+revoke execute on function public.upsert_player(text, text)
+  from public, anon, authenticated;
