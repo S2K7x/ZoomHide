@@ -2,6 +2,85 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-13
+
+**Sécurité : `upsert_player()` n'est plus appelable publiquement — n'importe
+qui pouvait renommer les joueurs du classement.**
+
+- `supabase/migrations/013_restrict_upsert_player.sql` : `revoke execute ...
+  from public, anon, authenticated` sur `upsert_player(text, text)`.
+
+Le problème : `001_init.sql` ligne 353 accorde explicitement `grant execute on
+function upsert_player(text, text) to anon, authenticated`, juste après le
+`revoke execute on all functions`. Ce grant date du prototype et n'a jamais
+été nécessaire : la fonction n'est appelée que depuis `create_hide` et
+`try_attempt`, deux fonctions `security definer` appartenant à `postgres` — un
+appel imbriqué s'exécute sous le propriétaire, pas sous `anon`. Aucun
+`supabase.rpc("upsert_player", ...)` n'existe dans le repo (recherche
+complète : les 11 RPC appelées côté client sont `create_hide`, `delete_hide`,
+`get_hide_by_code`, `get_hide_detail`, `get_hide_statuses`, `get_leaderboard`,
+`get_my_active_hide`, `get_my_rank`, `has_active_hide`, `report_hide`,
+`try_attempt`).
+
+Pourquoi ça compte : le corps de la fonction est un
+
+```sql
+insert into players (id, name) values (p_player_id, left(..., 24))
+on conflict (id) do update set name = excluded.name;
+```
+
+sans la moindre vérification de propriété — le `p_player_id` n'est qu'un
+identifiant généré côté client et stocké en `localStorage`, il n'y a pas
+d'authentification dans le jeu. Or `get_leaderboard` renvoie publiquement le
+`player_id` des 50 meilleurs joueurs (le client s'en sert pour surligner la
+ligne « you » sur `/leaderboard`). La chaîne d'attaque tenait donc en deux
+requêtes anonymes : `POST /rest/v1/rpc/get_leaderboard` pour récupérer les ids,
+puis `POST /rest/v1/rpc/upsert_player` pour réécrire le pseudo de n'importe
+lequel d'entre eux. Le pseudo est affiché sur `/leaderboard`, sur chaque carte
+du feed public (`active_hides.creator_name`), sur l'écran de jeu et sur l'image
+de partage story : vandalisme et usurpation de pseudo à la portée de tout
+visiteur, sans aucune trace côté victime. Accessoirement, la branche `insert`
+permettait de créer un nombre illimité de lignes `players` (tout id de 8 à 64
+caractères), donc de gonfler gratuitement la base du Free tier.
+
+Vérifications faites en base, avant/après :
+
+- Avant, `set local role anon; select upsert_player('zh-probe-000001',
+  'PROBE_ROLLED_BACK')` réussissait et écrivait bien la ligne (transaction
+  annulée par `rollback`, aucune donnée réelle touchée).
+- Après, le même appel renvoie `ERROR 42501: permission denied for function
+  upsert_player`, et `has_function_privilege('anon'|'authenticated', ...)`
+  renvoie `false`.
+- Le chemin interne est intact : toujours sous `role anon`, un
+  `try_attempt(<uuid inexistant>, 'zh-probe-000002', 'INTERNAL', ...)` a bien
+  créé/mis à jour la ligne `players` avec le pseudo `INTERNAL` avant de
+  retourner son erreur métier `not_active` (transaction annulée ; contrôle
+  final : zéro ligne `zh-probe-%` restante). Aucune régression sur
+  `create_hide`/`try_attempt`, qui enregistrent le pseudo du joueur comme
+  avant.
+- L'advisor sécurité Supabase ne liste plus `upsert_player` dans
+  `anon_security_definer_function_executable` /
+  `authenticated_security_definer_function_executable` ; ne restent que les 11
+  RPC publiques par conception et les avertissements déjà connus et acceptés
+  (RLS "enabled no policy" sur les tables, vue `active_hides` en `security
+  definer`).
+
+Item choisi car la routine donne la priorité absolue aux failles de sécurité,
+et parce que le premier item du backlog était précisément le contrôle de
+process « quelles fonctions `public` sont exécutables par `anon` ? » — c'est ce
+contrôle qui a débusqué celle-ci. Contrairement à la faille du 2026-08-12
+(fonctions oubliées par le `revoke`), celle-ci venait d'un grant délibéré mais
+devenu inutile : le contrôle doit donc comparer la liste exécutable à la liste
+des RPC réellement appelées, pas seulement chercher les oublis. Changement 100%
+SQL, zéro ligne de code applicatif, aucune règle de jeu modifiée, aucune
+nouvelle dépendance, impact quotas nul (au contraire : ferme un vecteur
+d'écriture anonyme). `npm run build` passe (12 routes générées).
+
+Piste laissée au backlog : la racine du problème est que `get_leaderboard`
+expose les `player_id`, ce qui rend usurpable toute RPC acceptant un
+`p_player_id` sans preuve de possession. Audit à faire RPC par RPC, et à terme
+remplacer `player_id` par un `is_me` calculé côté serveur dans le classement.
+
 ## 2026-08-12
 
 **Sécurité : les fonctions de maintenance `expire_hides()` et
