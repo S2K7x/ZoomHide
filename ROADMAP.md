@@ -20,18 +20,24 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   client : `create_hide`, `delete_hide`, `get_hide_by_code`, `get_hide_detail`,
   `get_hide_statuses`, `get_leaderboard`, `get_my_active_hide`, `get_my_rank`,
   `has_active_hide`, `report_hide`, `try_attempt`.
-- Sécurité (à étudier, priorité moyenne) : plus largement, l'identité d'un
-  joueur n'est qu'un `player_id` de localStorage, et `get_leaderboard` renvoie
-  publiquement celui des 50 meilleurs. Toute RPC qui accepte un `p_player_id`
-  sans preuve de possession est donc usurpable par quiconque lit le
-  classement. Audit à faire RPC par RPC : lesquelles font une écriture ou
-  révèlent quelque chose sur la base du seul `p_player_id` ? (`report_hide`
-  et `delete_hide` sont les premières à regarder — `delete_hide` vérifie bien
-  `creator_id`, mais le `creator_id` d'une cachette peut lui aussi être connu
-  via le classement des cacheurs.) La vraie correction serait de ne plus
-  exposer `player_id` dans `get_leaderboard` (renvoyer un booléen `is_me`
-  calculé côté serveur), voire de signer l'identité — trop gros pour une
-  routine quotidienne, à découper.
+  **Le 2026-08-14, ce contrôle a été étendu aux surfaces de lecture (vues,
+  colonnes renvoyées par les RPC) : c'est là que se cachait la faille du jour,
+  invisible pour un contrôle limité aux droits d'exécution.** Deuxième
+  question à poser à chaque migration : *une sortie publique contient-elle un
+  identifiant de joueur ?* Contrôle : `select * from active_hides limit 1` et
+  relecture du `json_build_object` de chaque RPC — aucun `player_id` /
+  `creator_id` / `reporter_id` ne doit en sortir.
+- Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
+  (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
+  `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
+  sur la simple présentation d'un `p_player_id`, sans preuve de possession :
+  quiconque obtient l'id d'un joueur par un autre canal (capture réseau,
+  appareil partagé, id recopié dans un partage) garde tous ses droits, sans
+  révocation possible. La correction de fond serait de signer l'identité
+  (jeton HMAC émis à la création du joueur, vérifié côté serveur) — trop gros
+  pour une routine quotidienne, à découper. À noter aussi : `report_hide`
+  n'utilise `p_reporter_id` que comme étiquette (aucun droit accordé), impact
+  d'une usurpation nul.
 - UX : mémoriser le tri du feed `/play` (Newest/Hardest/Expiring) en
   `localStorage`, comme le filtre « 🙈 Hide tried/found » déjà persistant
   (`zh_hide_done`) — le tri repart sur « Newest » à chaque visite.
@@ -60,6 +66,18 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-14** — Sécurité (critique) : les identifiants de joueur ne sont
+  plus exposés publiquement (`supabase/migrations/014_hide_player_ids.sql`,
+  `app/leaderboard/page.tsx`). La vue `active_hides`, lisible par `anon` via
+  PostgREST, renvoyait `creator_id` à côté de `id` — soit exactement le couple
+  attendu par `delete_hide(p_hide_id, p_creator_id)`. Deux requêtes anonymes
+  (`GET /rest/v1/active_hides?select=id,creator_id` puis
+  `POST /rest/v1/rpc/delete_hide`) suffisaient donc à supprimer n'importe
+  quelle cachette publique du feed, celle de n'importe quel joueur.
+  Exploitation reproduite en base (transaction annulée), puis vérifiée
+  inopérante après correction. Le `player_id` renvoyé par `get_leaderboard`
+  (deuxième chemin vers les mêmes `creator_id`) est remplacé par un booléen
+  `is_me` calculé côté serveur.
 - **2026-08-13** — Sécurité : révocation du droit d'exécution `anon`/
   `authenticated`/`public` sur `upsert_player(text, text)`
   (`supabase/migrations/013_restrict_upsert_player.sql`). Elle était exposée

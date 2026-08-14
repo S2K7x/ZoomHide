@@ -2,6 +2,113 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-14
+
+**Sécurité (critique) : n'importe quel visiteur anonyme pouvait supprimer
+n'importe quelle cachette publique du feed.**
+
+- `supabase/migrations/014_hide_player_ids.sql` : la vue `active_hides` ne
+  renvoie plus `creator_id` ; `get_leaderboard` ne renvoie plus `player_id`
+  mais un booléen `is_me` calculé côté serveur (nouveau paramètre
+  `p_player_id`, avec valeur par défaut).
+- `app/leaderboard/page.tsx` : surlignage de la ligne « you » basé sur
+  `is_me` au lieu d'une comparaison de `player_id` côté client.
+
+Le problème : dans ce jeu, l'identité d'un joueur est un `crypto.randomUUID()`
+généré côté client et gardé en `localStorage` (`lib/player.ts`). Il n'y a pas
+d'authentification : cet identifiant **est** le secret, et plusieurs RPC
+accordent des droits sur sa seule présentation. `delete_hide(p_hide_id,
+p_creator_id)` fait exactement ça :
+
+```sql
+update hides set status = 'deleted'
+where id = p_hide_id and creator_id = p_creator_id and status = 'active';
+```
+
+Or la vue `active_hides` — le feed public, `grant select ... to anon`, donc
+interrogeable directement en REST avec la clé publique présente dans le bundle
+front — exposait `creator_id` juste à côté de `h.id`. Le contrôle de propriété
+de `delete_hide` était donc vide de sens : la vue publiait elle-même les deux
+valeurs qu'il compare. L'attaque tenait en deux requêtes anonymes, sans compte,
+sans rien deviner :
+
+```
+GET  /rest/v1/active_hides?select=id,creator_id
+POST /rest/v1/rpc/delete_hide  {"p_hide_id": "...", "p_creator_id": "..."}
+```
+
+soit la destruction, en boucle, de toutes les cachettes actives du jeu — le
+seul contenu du produit, et 7 jours de jeu en cours pour chaque victime. La
+`hide` n'est pas effacée physiquement (`status = 'deleted'`), donc une
+restauration au cas par cas resterait possible en base, mais côté joueur la
+cachette disparaît du feed et devient injouable, sans notification ni trace.
+
+Rien n'indique une exploitation, et l'exposition a porté sur un jeu quasi vide :
+la table `hides` contient 6 lignes en tout (3 `expired`, 3 `deleted`, aucune
+`active`), toutes créées entre le 16 et le 30 juillet. Les 3 suppressions
+datent des 16-17 juillet, période de mise au point du projet. Réserve à poser
+clairement : `delete_hide` ne journalise ni auteur ni date de suppression, donc
+rien ne permet de distinguer après coup une suppression volontaire d'une
+suppression malveillante — l'absence d'exploitation est une déduction du
+contexte (dates, volume), pas une preuve.
+
+Deuxième chemin vers le même couple, fermé dans la foulée : `get_leaderboard`
+renvoyait le `player_id` des 50 meilleurs joueurs (le client s'en servait pour
+surligner sa propre ligne). Sur le classement des cacheurs, ces `player_id`
+*sont* des `creator_id` : même en retirant la colonne de la vue, il serait
+resté à croiser ces 50 ids avec les hide_id du feed (≤ 50 × N appels) pour
+retrouver un couple valide. Le classement renvoie donc maintenant un booléen
+`is_me`, calculé côté serveur à partir du `p_player_id` que le client envoie —
+il n'apprend plus que ce qu'il savait déjà (qui il est).
+
+Une fois ces deux fuites fermées, `creator_id` redevient ce qu'il aurait
+toujours dû être : un UUID v4 non devinable, jamais publié.
+
+Vérifications faites en base (chaque test dans une transaction annulée par
+`rollback`, contrôle final : zéro ligne `zh-probe-%` restante) :
+
+- Avant correction, sous `set local role anon` : `select id, creator_id from
+  active_hides` renvoie bien le couple, et `delete_hide(<id>, <creator_id>)`
+  passé avec ces valeurs met la cachette d'un autre joueur à
+  `status = 'deleted'`. Faille reproduite de bout en bout.
+- Après correction, la colonne `creator_id` a disparu de la vue
+  (`information_schema.columns` : 0 ligne) ; les 11 colonnes restantes sont
+  exactement celles que lit `app/play/page.tsx` (`select("*")`, type `Hide`
+  qui n'a jamais référencé `creator_id`) — feed intact.
+- Non-régression : le vrai propriétaire, qui connaît son id, supprime toujours
+  sa cachette (`delete_hide` renvoie `ok`, statut `deleted`).
+- `get_leaderboard` renvoie `{name, is_me, score, ...}` sans `player_id`,
+  `is_me` à `true` sur la bonne ligne et `false` ailleurs, sur les deux
+  classements. L'appel à deux arguments (front pas encore redéployé pendant la
+  fenêtre migration → déploiement Vercel) reste valide grâce au paramètre par
+  défaut : le classement s'affiche, seul le surlignage « you » manque
+  temporairement. `get_my_rank` est inchangée.
+- Le contrôle de droits d'exécution du backlog repasse au vert : exactement
+  les 11 RPC clientes exécutables par `anon`, `get_leaderboard` en une seule
+  signature (l'ancienne `(text, text)` est supprimée, la nouvelle re-`grant`
+  explicitement — `drop function` emporte les droits).
+- L'advisor sécurité Supabase ne signale rien de nouveau : mêmes
+  avertissements connus et acceptés qu'hier (RLS "enabled no policy" sur les
+  tables, `active_hides` en `security definer` — propriété conservée
+  volontairement, c'est elle qui donne au feed son accès en lecture à `hides`).
+
+Item choisi car la routine donne la priorité absolue aux failles de sécurité.
+Il vient du deuxième item du backlog (« l'identité n'est qu'un `player_id`
+exposé par `get_leaderboard` »), classé jusqu'ici en priorité moyenne et « trop
+gros à découper » : en creusant la piste `delete_hide` mentionnée dans cette
+note, la fuite s'est avérée bien plus directe que prévu (la vue du feed, pas le
+classement) et la correction bien plus petite qu'estimé. Leçon reportée dans le
+ROADMAP : le contrôle de sécurité quotidien ne regardait que les *droits
+d'exécution* des fonctions ; il doit aussi regarder les *colonnes renvoyées*
+par les vues et les RPC — la faille du jour était invisible au premier.
+
+Contraintes respectées : aucune règle de jeu modifiée (1 cachette active,
+3 tentatives/jour, expiration 7 jours, feed public inchangés), calcul de succès
+toujours 100% serveur, position du sticker toujours jamais exposée avant
+tentative, RLS inchangée. Zéro nouvelle dépendance. Impact quotas nul : la vue
+renvoie une colonne de moins, `get_leaderboard` fait une comparaison de texte
+de plus par ligne (50 lignes max). `npm run build` passe (12 routes générées).
+
 ## 2026-08-13
 
 **Sécurité : `upsert_player()` n'est plus appelable publiquement — n'importe
