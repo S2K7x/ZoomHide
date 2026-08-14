@@ -8,7 +8,9 @@ import Avatar from "@/components/Avatar";
 
 type Row = {
   name: string;
-  player_id: string;
+  // `is_me` est calculé côté serveur : le classement public ne renvoie plus
+  // les `player_id`, qui servent de secret d'identité au reste du jeu.
+  is_me: boolean;
   score: number;
   finds?: number;
   fails_caused?: number;
@@ -23,19 +25,18 @@ export default function LeaderboardPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [me, setMe] = useState("");
   const [myRank, setMyRank] = useState<MyRank>(null);
-
-  useEffect(() => {
-    setMe(getPlayerId());
-  }, []);
 
   const fetchBoard = async () => {
     setLoading(true);
     setMyRank(null);
+    // `getPlayerId()` direct (lecture localStorage) : pas d'état à hydrater,
+    // et l'id ne sert qu'à faire calculer `is_me` par le serveur.
+    const playerId = getPlayerId();
     const { data, error: fetchError } = await supabase.rpc("get_leaderboard", {
       p_board: board,
       p_period: period,
+      p_player_id: playerId,
     });
     if (fetchError) {
       setError(true);
@@ -49,10 +50,7 @@ export default function LeaderboardPage() {
 
     // Le top 50 ne suffit pas à situer un joueur classé plus loin — on ne
     // va chercher son rang exact que dans ce cas (pas de requête sinon).
-    // `getPlayerId()` direct (pas l'état `me`, qui peut ne pas encore être
-    // hydraté au premier rendu) : lecture localStorage, sûre dans un effet.
-    const playerId = getPlayerId();
-    if (list.length > 0 && !list.some((r) => r.player_id === playerId)) {
+    if (list.length > 0 && !list.some((r) => r.is_me)) {
       const { data: rankData } = await supabase.rpc("get_my_rank", {
         p_player_id: playerId,
         p_board: board,
@@ -183,7 +181,7 @@ export default function LeaderboardPage() {
               if (!r) return <div key={i} />;
               const rank = i === 0 ? 2 : i === 1 ? 1 : 3;
               return (
-                <div key={r.player_id} className="flex flex-col items-center gap-2">
+                <div key={i} className="flex flex-col items-center gap-2">
                   <div className="relative">
                     {rank === 1 && (
                       <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl">👑</span>
@@ -196,7 +194,7 @@ export default function LeaderboardPage() {
                   </div>
                   <p className="text-xs font-semibold text-center truncate max-w-[6rem]">
                     {r.name}
-                    {r.player_id === me && <span className="text-amber-300"> (you)</span>}
+                    {r.is_me && <span className="text-amber-300"> (you)</span>}
                   </p>
                   <p className="text-[13px] font-black text-amber-300">{r.score}</p>
                   <div
@@ -217,9 +215,9 @@ export default function LeaderboardPage() {
           <ol className="flex flex-col gap-2">
             {rest.map((r, i) => (
               <li
-                key={r.player_id}
+                key={i}
                 className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 border transition-colors ${
-                  r.player_id === me
+                  r.is_me
                     ? "bg-amber-400/15 border-amber-400/40 shadow-[0_10px_26px_-18px_rgba(246,184,30,0.9)]"
                     : "bg-white/5 border-white/10"
                 }`}
@@ -229,7 +227,7 @@ export default function LeaderboardPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">
                     {r.name}
-                    {r.player_id === me && <span className="text-amber-300 text-xs"> (you)</span>}
+                    {r.is_me && <span className="text-amber-300 text-xs"> (you)</span>}
                   </p>
                   <p className="text-xs text-white/45">{sub(r)}</p>
                 </div>
