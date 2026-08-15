@@ -2,6 +2,60 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-15
+
+**UX : le tri du feed `/play` est mémorisé d'une visite à l'autre.**
+
+- `app/play/page.tsx` : le tri sélectionné (Newest / Hardest / Expiring) est
+  écrit en `localStorage` sous la clé `zh_feed_sort` et relu au montage, sur
+  le même modèle que le filtre « 🙈 Hide tried/found » (`zh_hide_done`) déjà
+  persistant depuis le 2026-07-28.
+
+Jusqu'ici le feed repartait systématiquement sur « Newest » à chaque visite.
+Sur mobile, où l'on quitte et revient sur l'app en permanence, un joueur qui
+préfère chasser les cachettes difficiles ou celles qui expirent bientôt devait
+re-taper sur son tri à chaque retour — la moitié des tris disponibles était de
+fait peu utilisable.
+
+Deux détails d'implémentation :
+
+- `localStorage` n'est lisible qu'après le montage, alors que le fetch du feed
+  est déclenché par un effet sur `[sort]`. Lire la préférence puis appeler
+  `setSort` aurait donc lancé **deux** requêtes au chargement (une sur le tri
+  par défaut, une sur le tri restauré). Le fetch est maintenant retardé par un
+  drapeau `prefsLoaded` : une seule requête, comme avant. Le squelette de
+  chargement couvre déjà cet intervalle, l'écran est inchangé pour le joueur.
+- La valeur relue est validée contre la liste des tris (`isSort`) avant d'être
+  appliquée, pour qu'une clé `localStorage` bricolée à la main ne produise pas
+  un `order by` inattendu. La liste des tris, jusqu'ici écrite en dur dans le
+  JSX, est extraite en constante `SORTS` et sert aux deux usages.
+
+Aucune migration, aucune nouvelle requête, aucune dépendance : coût Supabase et
+Vercel strictement identique.
+
+**Contrôle de sécurité quotidien : passé sans anomalie.**
+
+Les deux contrôles inscrits au backlog ont été rejoués en base :
+
+- droits d'exécution : `anon`/`authenticated` peuvent exécuter exactement les
+  11 RPC appelées par le client, ni plus ni moins (`upsert_player`,
+  `expire_hides`, `cleanup_old_photos` toujours révoquées) ;
+- surfaces de lecture : `active_hides` ne renvoie plus `creator_id`, aucun
+  `json_build_object` de RPC ne renvoie d'identifiant de joueur, la RLS est
+  active sur les 5 tables et aucune n'est accessible à `anon` en direct ;
+- règle du jeu : la position du sticker n'est révélée que par le serveur
+  (`get_hide_detail` si trouvé ou si créateur, `try_attempt` si succès ou 3e
+  tentative du jour).
+
+Une observation mineure ajoutée au backlog plutôt que corrigée aujourd'hui (une
+seule amélioration par jour) : la vue `active_hides` porte des grants
+`insert`/`update`/`delete` pour `anon`, hérités du `grant all` par défaut du
+schéma. Ils sont inertes — la vue contient des agrégats, donc Postgres la
+déclare non modifiable et toute écriture échoue — mais comme la vue est
+`security definer`, une future simplification qui la rendrait auto-modifiable
+transformerait ces grants en écriture directe sur `hides` sans RLS. Le `revoke`
+correspondant est noté pour une prochaine journée.
+
 ## 2026-08-14
 
 **Sécurité (critique) : n'importe quel visiteur anonyme pouvait supprimer

@@ -27,6 +27,24 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   identifiant de joueur ?* Contrôle : `select * from active_hides limit 1` et
   relecture du `json_build_object` de chaque RPC — aucun `player_id` /
   `creator_id` / `reporter_id` ne doit en sortir.
+  **Le 2026-08-15, les deux contrôles sont passés sans anomalie** : droits
+  d'exécution `anon` exactement sur les 11 RPC listées, `active_hides` sans
+  `creator_id`, RLS active et sans grant `anon` sur les 5 tables, révélation
+  de la position toujours calculée côté serveur (`get_hide_detail` /
+  `try_attempt`). Les avis Supabase restants (`security_definer_view` sur
+  `active_hides`, `anon_security_definer_function_executable` sur les 11 RPC)
+  sont attendus par conception — c'est le mode de fonctionnement du jeu sans
+  authentification.
+- Sécurité (durcissement, priorité basse) : la vue `active_hides` porte des
+  grants `insert`/`update`/`delete` pour `anon` (hérités du `grant all` par
+  défaut du schéma, jamais révoqués). Sans effet aujourd'hui — la vue
+  contient des agrégats, donc Postgres la déclare non modifiable
+  (`information_schema.views.is_updatable = 'NO'`, vérifié le 2026-08-15) et
+  toute écriture échoue. Mais la vue est `security definer` (propriétaire
+  `postgres`) : si une future migration la simplifiait au point de la rendre
+  auto-modifiable, ces grants deviendraient une porte d'écriture directe sur
+  `hides` contournant la RLS. Correctif d'une ligne à passer un jour :
+  `revoke insert, update, delete on active_hides from anon, authenticated;`
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -38,9 +56,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   pour une routine quotidienne, à découper. À noter aussi : `report_hide`
   n'utilise `p_reporter_id` que comme étiquette (aucun droit accordé), impact
   d'une usurpation nul.
-- UX : mémoriser le tri du feed `/play` (Newest/Hardest/Expiring) en
-  `localStorage`, comme le filtre « 🙈 Hide tried/found » déjà persistant
-  (`zh_hide_done`) — le tri repart sur « Newest » à chaque visite.
 - Perf/coût : vérifier périodiquement l'usage réel du bucket Storage et des
   lignes `attempts`/`hides` dans le dashboard Supabase (rester sous les
   quotas Free tier) — pas un item de code, plutôt un rappel de suivi manuel.
@@ -66,6 +81,14 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-15** — UX : le tri du feed `/play` (Newest/Hardest/Expiring) est
+  mémorisé en `localStorage` (`zh_feed_sort`, `app/play/page.tsx`), comme le
+  filtre « 🙈 Hide tried/found » déjà persistant (`zh_hide_done`) — il
+  repartait sur « Newest » à chaque visite. Le premier chargement du feed est
+  retardé jusqu'à la lecture des préférences (`prefsLoaded`) pour ne pas
+  déclencher deux requêtes (tri par défaut puis tri mémorisé). Contrôle de
+  sécurité quotidien passé sans anomalie le même jour (détails dans le
+  premier item du backlog).
 - **2026-08-14** — Sécurité (critique) : les identifiants de joueur ne sont
   plus exposés publiquement (`supabase/migrations/014_hide_player_ids.sql`,
   `app/leaderboard/page.tsx`). La vue `active_hides`, lisible par `anon` via

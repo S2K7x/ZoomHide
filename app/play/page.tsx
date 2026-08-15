@@ -23,6 +23,14 @@ type Hide = {
 type Sort = "recent" | "hardest" | "expiring";
 
 const PAGE_SIZE = 20;
+const SORT_KEY = "zh_feed_sort";
+const SORTS: [Sort, string][] = [
+  ["recent", "Newest"],
+  ["hardest", "Hardest"],
+  ["expiring", "Expiring"],
+];
+
+const isSort = (v: string | null): v is Sort => SORTS.some(([k]) => k === v);
 
 export default function PlayFeed() {
   const [hides, setHides] = useState<Hide[]>([]);
@@ -34,6 +42,10 @@ export default function PlayFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [hideDone, setHideDone] = useState(false);
   const [error, setError] = useState(false);
+  // les préférences localStorage ne sont lisibles qu'après le montage : on
+  // retarde le premier fetch pour ne pas le lancer deux fois (tri par défaut
+  // puis tri mémorisé)
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
 
   const fetchHides = async (opts?: { isManual?: boolean; loadMore?: boolean }) => {
     const offset = opts?.loadMore ? hides.length : 0;
@@ -78,13 +90,22 @@ export default function PlayFeed() {
   };
 
   useEffect(() => {
+    if (!prefsLoaded) return;
     fetchHides();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sort]);
+  }, [sort, prefsLoaded]);
 
   useEffect(() => {
+    const saved = localStorage.getItem(SORT_KEY);
+    if (isSort(saved)) setSort(saved);
     setHideDone(localStorage.getItem("zh_hide_done") === "1");
+    setPrefsLoaded(true);
   }, []);
+
+  const changeSort = (next: Sort) => {
+    setSort(next);
+    localStorage.setItem(SORT_KEY, next);
+  };
 
   const toggleHideDone = () => {
     setHideDone((prev) => {
@@ -127,16 +148,10 @@ export default function PlayFeed() {
       </div>
 
       <div className="flex gap-2 text-sm flex-wrap">
-        {(
-          [
-            ["recent", "Newest"],
-            ["hardest", "Hardest"],
-            ["expiring", "Expiring"],
-          ] as [Sort, string][]
-        ).map(([k, label]) => (
+        {SORTS.map(([k, label]) => (
           <button
             key={k}
-            onClick={() => setSort(k)}
+            onClick={() => changeSort(k)}
             aria-pressed={sort === k}
             className={`zh-chip ${sort === k ? "zh-chip-on" : ""}`}
           >
