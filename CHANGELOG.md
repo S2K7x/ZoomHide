@@ -2,6 +2,71 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-16
+
+**Sécurité (durcissement) : la vue publique `active_hides` n'est plus
+accessible qu'en lecture pour `anon`.**
+
+- `supabase/migrations/015_restrict_active_hides_writes.sql` : `revoke all` puis
+  `grant select` sur `public.active_hides` pour `anon`/`authenticated`, et
+  alignement des default privileges du schéma `public` (`revoke all` +
+  `grant select` sur `tables`) pour le rôle `postgres`, celui qui crée les
+  objets via les migrations.
+
+Le feed public est servi par la vue `active_hides`, lisible directement en REST
+avec la clé publique embarquée dans le bundle front. Elle portait **tous** les
+privilèges pour `anon` et `authenticated` — `insert`, `update`, `delete`, plus
+`truncate`, `references`, `trigger` et `maintain` — hérités du `grant all on all
+tables in schema public` que Supabase applique par défaut aux nouveaux objets du
+schéma. Seul le `select` est utilisé par l'app (`app/play/page.tsx`).
+
+Ces droits étaient inertes, et le sont restés jusqu'à leur retrait : la vue
+contient des agrégats (`count(*)`/`sum(...)` sur `attempts`), donc Postgres la
+déclare non modifiable et rejette l'écriture *avant* de regarder les droits.
+Vérifié en base sous le rôle `anon` : un `delete from active_hides` échoue en
+`55000 object_not_in_prerequisite_state` (« Views that do not select from a
+single table or view are not automatically updatable »), pas en erreur de
+privilège. Aucune exploitation n'était donc possible aujourd'hui, et cette
+correction ne ferme pas une faille ouverte.
+
+Ce qu'elle ferme, c'est un piège pour plus tard. La vue est `security definer`
+(propriétaire `postgres`, donc exécutée hors RLS) : le jour où une migration la
+simplifierait au point de la rendre auto-modifiable — suppression des agrégats,
+passage par une table de compteurs pré-calculés pour économiser du compute, etc.
+— ces grants seraient devenus, silencieusement et sans qu'aucune ligne de la
+migration ne parle de droits, un chemin d'écriture direct sur `hides` contournant
+la RLS et les contrôles de propriété des RPC (`create_hide`, `delete_hide`).
+C'est exactement la forme des deux failles précédentes (2026-08-12 et
+2026-08-13) : un privilège hérité par défaut, jamais demandé, jamais remarqué.
+
+Le `alter default privileges` traite la cause côté tables et vues : les
+prochains objets du schéma naîtront avec `select` seul pour `anon`. Attention,
+il ne couvre **pas** les fonctions — une nouvelle RPC continue d'être exécutable
+par `anon` sans grant explicite, d'où le contrôle récurrent inscrit au backlog.
+Le pendant « fonctions » (`revoke execute` par défaut + `grant execute` explicite
+sur les 11 RPC) est ajouté au backlog : plus délicat, puisqu'une RPC oubliée
+dans la liste deviendrait inappelable côté client.
+
+Vérifications après migration : `has_table_privilege('anon', 'active_hides',
+...)` renvoie `true` pour `SELECT` et `false` pour `INSERT`/`UPDATE`/`DELETE` ;
+la lecture du feed et les RPC `get_leaderboard`, `has_active_hide`,
+`get_hide_statuses` répondent normalement sous le rôle `anon` ; `npm run build`
+passe. Aucun code applicatif modifié, aucune requête ajoutée : coût Supabase et
+Vercel strictement identique.
+
+**Contrôle de sécurité quotidien : passé sans anomalie.**
+
+- droits d'exécution : `anon`/`authenticated` peuvent exécuter exactement les 11
+  RPC appelées par le client (`upsert_player`, `expire_hides`,
+  `cleanup_old_photos` toujours révoquées) ;
+- surfaces de lecture : `active_hides` ne renvoie ni `creator_id` ni la position
+  du sticker, aucune RPC exécutable par `anon` ne renvoie d'identifiant de
+  joueur (contrôle automatisé sur `pg_proc.prosrc`), la RLS est active sur les 5
+  tables et aucune n'est accessible à `anon` en direct ;
+- règle du jeu : la position du sticker n'est révélée que par le serveur
+  (`get_hide_detail` si trouvé ou si créateur, `try_attempt` si succès ou 3e
+  tentative du jour).
+
 ## 2026-08-15
 
 **UX : le tri du feed `/play` est mémorisé d'une visite à l'autre.**

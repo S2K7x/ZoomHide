@@ -31,20 +31,31 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   d'exécution `anon` exactement sur les 11 RPC listées, `active_hides` sans
   `creator_id`, RLS active et sans grant `anon` sur les 5 tables, révélation
   de la position toujours calculée côté serveur (`get_hide_detail` /
-  `try_attempt`). Les avis Supabase restants (`security_definer_view` sur
+  `try_attempt`).
+  **Le 2026-08-16, les deux contrôles sont repassés sans anomalie** (11 RPC
+  exactement, `active_hides` sans `creator_id`, RLS active et zéro grant `anon`
+  sur les 5 tables), et un troisième volet — les *droits d'écriture* sur les
+  surfaces publiques — a été corrigé le même jour (voir `## Fait`). Troisième
+  question à poser à chaque migration : *un objet public a-t-il reçu autre
+  chose que `select` pour `anon` ?* Contrôle : `select relname, relacl from
+  pg_class where relnamespace = 'public'::regnamespace and relkind in
+  ('r','v');` — pour `anon`/`authenticated`, l'ACL attendue est `r` seul (ou
+  aucune entrée du tout pour les 5 tables).
+  Les avis Supabase restants (`security_definer_view` sur
   `active_hides`, `anon_security_definer_function_executable` sur les 11 RPC)
   sont attendus par conception — c'est le mode de fonctionnement du jeu sans
   authentification.
-- Sécurité (durcissement, priorité basse) : la vue `active_hides` porte des
-  grants `insert`/`update`/`delete` pour `anon` (hérités du `grant all` par
-  défaut du schéma, jamais révoqués). Sans effet aujourd'hui — la vue
-  contient des agrégats, donc Postgres la déclare non modifiable
-  (`information_schema.views.is_updatable = 'NO'`, vérifié le 2026-08-15) et
-  toute écriture échoue. Mais la vue est `security definer` (propriétaire
-  `postgres`) : si une future migration la simplifiait au point de la rendre
-  auto-modifiable, ces grants deviendraient une porte d'écriture directe sur
-  `hides` contournant la RLS. Correctif d'une ligne à passer un jour :
-  `revoke insert, update, delete on active_hides from anon, authenticated;`
+- Sécurité (durcissement, priorité basse) : les *fonctions* nouvellement créées
+  dans `public` héritent toujours d'un `execute` pour `anon`/`authenticated`
+  via les default privileges Supabase (le pendant « tables/vues » a été
+  neutralisé le 2026-08-16, migration `015`). À passer un jour :
+  `alter default privileges for role postgres in schema public revoke execute
+  on functions from anon, authenticated;` accompagné d'un `grant execute`
+  explicite pour les 11 RPC du jeu. Les nouvelles fonctions naîtraient alors
+  fermées, et un oubli casserait bruyamment la feature au lieu d'ouvrir
+  silencieusement une brèche — c'est ce mécanisme d'héritage qui a produit les
+  deux failles des 2026-08-12 et 2026-08-13. À faire avec soin : toute RPC
+  oubliée dans la liste des grants devient inappelable côté client.
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -81,6 +92,21 @@ _(rien pour l'instant)_
 
 ## Fait
 
+- **2026-08-16** — Sécurité (durcissement) : la vue publique `active_hides` ne
+  porte plus que `select` pour `anon`/`authenticated`
+  (`supabase/migrations/015_restrict_active_hides_writes.sql`). Elle héritait
+  du `grant all` par défaut du schéma : `insert`/`update`/`delete` (+
+  `truncate`/`references`/`trigger`/`maintain`) étaient accordés à `anon`.
+  Grants inertes aujourd'hui — la vue contient des agrégats, donc Postgres la
+  refuse en écriture avant même de regarder les droits (erreur `55000`,
+  reproduit en base sous le rôle `anon`) — mais la vue est `security definer` :
+  une future simplification qui la rendrait auto-modifiable les aurait
+  transformés en écriture directe sur `hides`, hors RLS. Les default privileges
+  du schéma sont alignés dans la foulée (`revoke all` + `grant select` sur
+  `tables`), pour que les prochaines tables/vues ne naissent plus ouvertes en
+  écriture. Lecture du feed vérifiée intacte sous le rôle `anon`, RPC
+  inchangées, aucun code applicatif touché. Contrôle de sécurité quotidien
+  passé sans anomalie le même jour (détails dans le premier item du backlog).
 - **2026-08-15** — UX : le tri du feed `/play` (Newest/Hardest/Expiring) est
   mémorisé en `localStorage` (`zh_feed_sort`, `app/play/page.tsx`), comme le
   filtre « 🙈 Hide tried/found » déjà persistant (`zh_hide_done`) — il
