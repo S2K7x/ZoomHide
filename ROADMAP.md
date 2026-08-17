@@ -35,16 +35,17 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   `active_hides`, `anon_security_definer_function_executable` sur les 11 RPC)
   sont attendus par conception — c'est le mode de fonctionnement du jeu sans
   authentification.
-- Sécurité (durcissement, priorité basse) : la vue `active_hides` porte des
-  grants `insert`/`update`/`delete` pour `anon` (hérités du `grant all` par
-  défaut du schéma, jamais révoqués). Sans effet aujourd'hui — la vue
-  contient des agrégats, donc Postgres la déclare non modifiable
-  (`information_schema.views.is_updatable = 'NO'`, vérifié le 2026-08-15) et
-  toute écriture échoue. Mais la vue est `security definer` (propriétaire
-  `postgres`) : si une future migration la simplifiait au point de la rendre
-  auto-modifiable, ces grants deviendraient une porte d'écriture directe sur
-  `hides` contournant la RLS. Correctif d'une ligne à passer un jour :
-  `revoke insert, update, delete on active_hides from anon, authenticated;`
+  **Le 2026-08-17, les deux contrôles sont repassés sans anomalie** (aucune
+  migration depuis le 2026-08-14, état identique). Troisième contrôle ajouté
+  ce jour-là, à faire sur `pg_class.relacl` et non sur
+  `information_schema` : les ACL réelles des tables et vues du schéma public.
+  Résultat : les 5 tables n'ont aucun grant `anon`/`authenticated` (RLS active
+  sur les 5), et `active_hides` porte exactement
+  `anon=r/postgres, authenticated=r/postgres` — lecture seule, aucun droit
+  d'écriture. L'item de backlog qui annonçait des grants
+  `insert`/`update`/`delete` sur cette vue était donc une fausse alerte
+  (lecture d'`information_schema.table_privileges`, qui ne reflète pas les
+  ACL effectives) — retiré, rien à révoquer.
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -71,6 +72,29 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   (`app/icon-192/route.tsx`, `app/icon-512/route.tsx`, loupe dessinée en CSS)
   par les vraies icônes de marque, une fois `public/assets/logo.png`
   disponible (dossier encore vide à ce jour).
+- Coût (free tier, priorité moyenne) : une publication qui échoue **après** les
+  deux `supabase.storage.upload` de `app/create/page.tsx` (erreur
+  `already_active`, ou erreur réseau sur `create_hide`) laisse
+  `<player>/<uuid>.jpg` et `<uuid>_thumb.jpg` dans le bucket `photos` sans
+  aucune ligne `hides` qui les référence. `cleanup_old_photos()` ne balaie que
+  les photos rattachées à des cachettes anciennes : ces orphelins restent
+  indéfiniment dans le quota Storage. Deux pistes : supprimer les deux objets
+  dans le `catch`/la branche `already_active` de `publish()`, et/ou étendre
+  `cleanup_old_photos()` aux objets sans `hides` correspondant et vieux de plus
+  de 24 h (plus robuste : couvre aussi l'onglet fermé en cours d'upload).
+- UX (priorité basse) : l'écran de jeu est le dernier à afficher un
+  « Loading… » en texte brut (`components/HideGame.tsx`, plus « Unlocking
+  hide… » dans `components/PrivatePlay.tsx`), alors que `/play`,
+  `/leaderboard`, `ZoomPanViewer` et `RevealShare` ont tous un squelette
+  `.zh-skeleton`. C'est pourtant l'écran d'atterrissage des liens partagés.
+- Fiabilité (priorité basse) : `report_hide` est appelée sans lire son retour
+  dans `components/HideGame.tsx` — la modale affiche « Thanks, the hide has
+  been reported » même quand la requête a échoué. Même classe de bug que celui
+  corrigé sur `/create` le 2026-08-17. Les deux autres appels dont l'erreur
+  reste ignorée (`get_hide_statuses` sur `/play`, `get_my_rank` sur
+  `/leaderboard`) sont des enrichissements secondaires : leur échec dégrade
+  l'affichage (badges ou ligne « you » absents) sans jamais annoncer au joueur
+  quelque chose de faux — à laisser tels quels.
 - Note : l'index composite sur `attempts(hide_id, player_id, ...)` évoqué
   précédemment existe déjà (`idx_attempts_daily`, migration `001_init.sql`)
   — retiré du backlog, rien à faire.
@@ -80,6 +104,20 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-17** — Fiabilité : gestion des erreurs réseau/API sur `/create`
+  (`app/create/page.tsx`), dernière page à ignorer l'`error` renvoyé par
+  Supabase. `get_my_active_hide` en échec faisait passer le joueur pour
+  « sans cachette active » : il repartait sur l'écran d'upload, compressait et
+  téléversait deux images, et ne découvrait le problème qu'au `create_hide`
+  final (`already_active`) — deux fichiers orphelins dans le bucket au passage.
+  `delete_hide` en échec vidait la carte à l'écran sans que rien ne soit
+  supprimé en base, et le joueur restait bloqué à la publication suivante.
+  Les deux cas ont maintenant un état d'erreur explicite (écran « Try again »
+  au chargement, message dans la modale de suppression), et un retour
+  `not_found` de `delete_hide` resynchronise l'état depuis le serveur au lieu
+  de le deviner côté client. Contrôle de sécurité quotidien passé sans
+  anomalie le même jour (détails dans le premier item du backlog).
 
 - **2026-08-15** — UX : le tri du feed `/play` (Newest/Hardest/Expiring) est
   mémorisé en `localStorage` (`zh_feed_sort`, `app/play/page.tsx`), comme le
