@@ -28,6 +28,7 @@ type MyHide = {
 
 export default function CreatePage() {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [myHide, setMyHide] = useState<MyHide | null>(null);
   const [name, setName] = useState("");
 
@@ -49,6 +50,7 @@ export default function CreatePage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const copyLink = async (key: string, text: string) => {
     try {
@@ -105,11 +107,22 @@ export default function CreatePage() {
     setEyedrop(false);
   };
 
+  // Un échec réseau ici ne doit PAS passer pour « aucune cachette active » :
+  // l'écran d'upload s'afficherait, le joueur compresserait et téléverserait
+  // deux images (photo + thumbnail) avant de se prendre `already_active` au
+  // moment du `create_hide` — deux fichiers orphelins dans le bucket Storage
+  // pour rien, et un message incompréhensible pour lui.
   const loadMyHide = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.rpc("get_my_active_hide", {
+    const { data, error: rpcErr } = await supabase.rpc("get_my_active_hide", {
       p_creator_id: getPlayerId(),
     });
+    if (rpcErr) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    setLoadError(false);
     setMyHide(data as MyHide | null);
     setLoading(false);
   }, []);
@@ -199,20 +212,54 @@ export default function CreatePage() {
     }
   };
 
+  // La suppression échouait en silence : la carte disparaissait de l'écran même
+  // quand la requête n'était jamais partie, et le joueur se retrouvait bloqué
+  // sur « You already have an active hide! » à la publication suivante.
   const removeHide = async () => {
     if (!myHide) return;
     setDeleting(true);
-    await supabase.rpc("delete_hide", {
+    setDeleteError("");
+    const { data, error: rpcErr } = await supabase.rpc("delete_hide", {
       p_hide_id: myHide.id,
       p_creator_id: getPlayerId(),
     });
     setDeleting(false);
+    if (rpcErr) {
+      setDeleteError("Couldn't delete your hide. Check your connection and try again.");
+      return;
+    }
     setShowDeleteConfirm(false);
+    // `not_found` = la cachette n'est déjà plus active (expirée entre-temps,
+    // supprimée depuis un autre appareil) : on resynchronise sur le serveur
+    // au lieu de supposer un état local.
+    if ((data as { error?: string } | null)?.error) {
+      await loadMyHide();
+      return;
+    }
     setMyHide(null);
   };
 
   if (loading) {
     return <p className="p-8 text-center text-white/60">Loading…</p>;
+  }
+
+  // `!photo` : si le joueur a déjà une photo en cours de placement (échec de
+  // `loadMyHide` relancé après un `already_active`), on ne lui efface pas son
+  // écran — le message d'erreur en ligne suffit.
+  if (loadError && !photo) {
+    return (
+      <div className="px-6 pt-14">
+        <div className="zh-card text-center py-10 px-6 text-white/60 flex flex-col gap-2">
+          <p>⚠️ Couldn&apos;t check your hides. Check your connection.</p>
+          <button
+            onClick={loadMyHide}
+            className="text-amber-300 font-semibold underline"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // ---- publish success ----
@@ -310,7 +357,10 @@ export default function CreatePage() {
           </div>
         )}
         <button
-          onClick={() => setShowDeleteConfirm(true)}
+          onClick={() => {
+            setDeleteError("");
+            setShowDeleteConfirm(true);
+          }}
           className="rounded-2xl border border-red-400/50 text-red-300 font-semibold py-3"
         >
           🗑️ Delete this hide
@@ -329,6 +379,7 @@ export default function CreatePage() {
               <p className="text-sm text-white/60">
                 This can&apos;t be undone. Attempts and finds on it will be lost.
               </p>
+              {deleteError && <p className="text-sm text-red-300">⚠️ {deleteError}</p>}
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}

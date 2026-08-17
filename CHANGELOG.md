@@ -2,6 +2,66 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-17
+
+**Fiabilité : `/create` ne fait plus passer une panne réseau pour un état de
+jeu.**
+
+- `app/create/page.tsx` : `get_my_active_hide` et `delete_hide` lisent
+  désormais l'`error` renvoyé par Supabase au lieu de l'ignorer
+  (`const { data } = await ...`), et l'écran reflète l'échec.
+
+C'était la dernière page à reproduire le motif corrigé le 2026-08-01 sur
+`/play` et `/leaderboard`, et c'est ici qu'il coûtait le plus cher, parce que
+les deux appels ne servent pas à afficher une liste mais à décider *quel écran
+montrer* :
+
+- **Au chargement.** `get_my_active_hide` renvoie `null` quand le joueur n'a
+  pas de cachette active. En cas de panne réseau, `data` valait `null`
+  également : indistinguable. Le joueur qui a déjà une cachette tombait donc
+  sur l'écran d'upload, choisissait une photo, la recadrait, plaçait sa forme,
+  et n'apprenait le problème qu'à la toute fin — un `already_active` renvoyé
+  par `create_hide`, **après** que la photo et son thumbnail aient été
+  téléversés dans le bucket. Deux fichiers orphelins dans le Storage
+  (`cleanup_old_photos()` ne balaie que les photos rattachées à des cachettes
+  anciennes, jamais celles qu'aucune ligne `hides` ne référence), pour un
+  travail entièrement perdu. La page affiche maintenant une carte d'erreur avec
+  « Try again », sur le modèle de `/play`. Elle ne s'affiche que si aucune photo
+  n'est en cours de placement, pour ne pas effacer l'écran d'un joueur qui a
+  déjà commencé.
+- **À la suppression.** `delete_hide` était appelée sans lire son retour, puis
+  `setMyHide(null)` s'exécutait dans tous les cas : la carte disparaissait de
+  l'écran même quand la requête n'était jamais partie. Le joueur croyait sa
+  cachette supprimée, tentait d'en publier une nouvelle, et se prenait « You
+  already have an active hide! Delete it first. » sans plus rien à supprimer à
+  l'écran — impasse dont seul un rechargement de page sortait. La modale garde
+  maintenant la main et affiche l'erreur. Le cas `{"error": "not_found"}`
+  (cachette expirée entre-temps, ou supprimée depuis un autre appareil) est
+  traité à part : on relit l'état depuis le serveur au lieu de le supposer.
+
+Aucune migration, aucune nouvelle requête, aucune dépendance : coût Supabase et
+Vercel strictement identique. Build Next vérifié ; les deux avertissements
+ESLint de ce fichier (`set-state-in-effect`, `Date.now` en rendu) sont
+antérieurs et inchangés.
+
+**Contrôle de sécurité quotidien : passé sans anomalie.**
+
+Aucune migration n'a été appliquée depuis le 2026-08-14, et l'état en base est
+identique à celui vérifié le 2026-08-15 : droits d'exécution `anon` sur
+exactement les 11 RPC du client, `active_hides` sans `creator_id`,
+`get_leaderboard` qui renvoie `name`/`is_me`/`score`/`finds` et jamais de
+`player_id`, RLS active sur les 5 tables, position du sticker toujours révélée
+côté serveur uniquement.
+
+**Correction d'une observation du 2026-08-15.** Le backlog annonçait des grants
+`insert`/`update`/`delete` pour `anon` sur la vue `active_hides`, à révoquer un
+jour. Le contrôle refait sur `pg_class.relacl` — les ACL réellement stockées,
+et non `information_schema.table_privileges` — montre qu'ils n'existent pas :
+la vue porte exactement `anon=r/postgres, authenticated=r/postgres`, et les 5
+tables n'ont aucun grant du tout. Il n'y avait donc rien à corriger ; l'item est
+retiré du backlog et le contrôle `relacl` ajouté à la routine de sécurité, plus
+fiable que la vue `information_schema` pour cette question.
+
 ## 2026-08-15
 
 **UX : le tri du feed `/play` est mémorisé d'une visite à l'autre.**
