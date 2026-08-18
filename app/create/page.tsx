@@ -159,7 +159,15 @@ export default function CreatePage() {
     try {
       const playerId = getPlayerId();
       setPlayerName(name);
-      const base = `${playerId}/${crypto.randomUUID()}`;
+      // Le chemin de stockage ne doit contenir AUCUN identifiant de joueur :
+      // `photo_url` / `thumbnail_url` sont publics (feed `active_hides`, page
+      // de jeu, partage), donc tout ce qui est dans le chemin est public aussi.
+      // Le dossier était le `player_id` : il suffisait de lire une URL du feed
+      // pour récupérer l'identité du créateur, et donc pouvoir supprimer sa
+      // cachette (`delete_hide(hide_id, creator_id)` — les deux valeurs étaient
+      // publiques) ou agir en son nom. Dossier par mois : lisible dans le
+      // dashboard Storage, et la date de publication est déjà publique.
+      const base = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}`;
 
       // On incruste le sticker dans la photo ET le thumbnail : le chercheur le
       // voit (camouflé), et la position n'est jamais transmise en clair.
