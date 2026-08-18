@@ -5,6 +5,46 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 
 ## Backlog
 
+- **Fiabilité / coût (priorité HAUTE, découvert le 2026-08-18) :
+  `cleanup_old_photos()` n'a JAMAIS fonctionné.** Le job cron `cleanup-photos`
+  échoue à chaque exécution depuis le 2026-07-17 — 32 exécutions, 32 échecs,
+  0 succès (`select * from cron.job_run_details`). Cause : Supabase interdit
+  désormais le `delete from storage.objects` en SQL via le trigger
+  `storage.protect_delete()` (`ERROR 42501: Direct deletion from storage tables
+  is not allowed. Use the Storage API instead.`). Conséquence : aucune photo
+  n'a jamais été supprimée du bucket `photos`, ni les anciennes (règle des
+  30 jours), ni les orphelines. Les deux autres jobs cron vont bien
+  (`expire-hides` : 776 succès, `cleanup-code-attempts` : 31 succès) — le
+  gameplay n'est pas touché, c'est uniquement le quota Storage qui grossit
+  sans jamais être purgé.
+  Correctif possible : passer la suppression par la Storage API, dans une Edge
+  Function Supabase (elle reçoit `SUPABASE_SERVICE_ROLE_KEY` en variable
+  d'environnement injectée, donc aucun secret à stocker en base) qui
+  supprimerait à la fois les photos des cachettes anciennes et les orphelines.
+  **Point bloquant à trancher manuellement : comment la déclencher une fois par
+  jour sans ouvrir une surface publique.** `pg_net` n'est pas installé, donc
+  pg_cron ne sait pas faire d'appel HTTP en l'état ; et une Edge Function en
+  `verify_jwt = false` serait déclenchable par n'importe qui (levier
+  d'épuisement du compute Free tier, exactement ce que `012` a fermé). Deux
+  pistes : (a) `create extension pg_net` + clé service_role dans
+  `vault.secrets`, appel depuis pg_cron ; (b) cron Vercel (Hobby : 1×/jour)
+  sur une route `/api/cleanup-photos` protégée par `CRON_SECRET`, avec la clé
+  service_role en variable d'environnement Vercel. Les deux demandent de
+  provisionner un secret à la main — hors de portée de la routine quotidienne.
+  Ne PAS contourner le trigger avec `set local storage.allow_delete_query =
+  'true'` : cela supprimerait la ligne de métadonnées sans supprimer le fichier
+  côté objet, donc sans rien libérer réellement — c'est précisément la perte de
+  données que le garde-fou prévient.
+- Sécurité (résiduel du correctif du 2026-08-18, à faire à la main) : les 6
+  cachettes déjà en base ont un `photo_url` public dont le premier segment de
+  chemin est le `player_id` du créateur — la fuite est déjà publique pour ces
+  lignes-là, le correctif du jour ne vaut que pour les nouvelles publications.
+  Aucune n'est active (3 `expired`, 3 `deleted`), donc plus rien à supprimer
+  via `delete_hide`, mais ces `player_id` restent utilisables pour publier ou
+  tenter en leur nom. À faire côté propriétaire : considérer ces identités
+  comme compromises (vider `zh_player_id` du localStorage sur les appareils
+  concernés pour en régénérer une), et supprimer ces 12 objets du bucket depuis
+  le dashboard Storage — ce qui règle la fuite et le quota d'un même geste.
 - Sécurité (process, à refaire après chaque migration qui ajoute une fonction) :
   vérifier que les nouvelles fonctions du schéma `public` ne sont pas
   exécutables par `anon`/`authenticated` sans grant explicite. Le `revoke
@@ -46,6 +86,20 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   `insert`/`update`/`delete` sur cette vue était donc une fausse alerte
   (lecture d'`information_schema.table_privileges`, qui ne reflète pas les
   ACL effectives) — retiré, rien à révoquer.
+  **Le 2026-08-18, les trois contrôles sont repassés sans anomalie, mais un
+  quatrième a été ajouté — et c'est lui qui a trouvé la faille du jour.**
+  Les contrôles précédents regardent les *droits* (exécution, ACL) et les
+  *colonnes* renvoyées ; aucun ne regardait le *contenu* des valeurs
+  renvoyées. Or `photo_url` était construit comme
+  `<player_id>/<uuid>.jpg` : la colonne s'appelle `photo_url`, elle passe donc
+  tous les contrôles « aucune colonne `player_id` en sortie », mais elle
+  transportait l'identifiant du créateur en clair dans son chemin. Quatrième
+  question à poser à chaque migration et à chaque nouvelle donnée publique :
+  *une valeur publique contient-elle un identifiant en sous-chaîne* (chemin de
+  fichier, URL, code, slug, nom d'objet) ? Contrôle :
+  `select creator_id = split_part(split_part(photo_url,'/photos/',2),'/',1)
+  from hides;` — doit être `false` partout (les lignes antérieures au
+  2026-08-18 sont à `true`, voir l'item de nettoyage manuel ci-dessus).
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -72,10 +126,12 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   (`app/icon-192/route.tsx`, `app/icon-512/route.tsx`, loupe dessinée en CSS)
   par les vraies icônes de marque, une fois `public/assets/logo.png`
   disponible (dossier encore vide à ce jour).
-- Coût (free tier, priorité moyenne) : une publication qui échoue **après** les
+- Coût (free tier, priorité moyenne — **dépend du correctif « HAUTE » en tête
+  de backlog** : tant que la suppression ne passe pas par la Storage API, rien
+  de ce qui suit n'est réalisable) : une publication qui échoue **après** les
   deux `supabase.storage.upload` de `app/create/page.tsx` (erreur
   `already_active`, ou erreur réseau sur `create_hide`) laisse
-  `<player>/<uuid>.jpg` et `<uuid>_thumb.jpg` dans le bucket `photos` sans
+  `<aaaa-mm>/<uuid>.jpg` et `<uuid>_thumb.jpg` dans le bucket `photos` sans
   aucune ligne `hides` qui les référence. `cleanup_old_photos()` ne balaie que
   les photos rattachées à des cachettes anciennes : ces orphelins restent
   indéfiniment dans le quota Storage. Deux pistes : supprimer les deux objets
@@ -104,6 +160,23 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-18** — Sécurité : le chemin de stockage des photos ne contient
+  plus le `player_id` du créateur (`app/create/page.tsx`). Il valait
+  `<player_id>/<uuid>.jpg`, et ce chemin se retrouve tel quel dans
+  `photo_url`/`thumbnail_url`, colonnes publiques du feed `active_hides` et de
+  `get_hide_detail` : lire une URL du feed suffisait à récupérer l'identité du
+  créateur. Or les RPC n'exigent aucune preuve de possession de l'identifiant,
+  et `delete_hide(p_hide_id, p_creator_id)` prend deux valeurs qui étaient
+  toutes les deux publiques (`active_hides.id` + l'id extrait de l'URL) :
+  n'importe qui pouvait supprimer n'importe quelle cachette du feed, publier ou
+  tenter en se faisant passer pour son créateur. Le correctif du 2026-08-14,
+  qui avait retiré `creator_id` des sorties des RPC, était donc contourné par
+  une simple sous-chaîne d'URL. Nouveau chemin : `<aaaa-mm>/<uuid>` — sans
+  aucun lien avec le joueur (la policy `anon upload photos` de
+  `storage.objects` ne contrôle que `bucket_id`, jamais le dossier : rien ne
+  dépendait de cette structure). Les 6 lignes antérieures gardent leur URL et
+  restent à nettoyer à la main (voir backlog).
 
 - **2026-08-17** — Fiabilité : gestion des erreurs réseau/API sur `/create`
   (`app/create/page.tsx`), dernière page à ignorer l'`error` renvoyé par

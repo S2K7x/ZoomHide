@@ -2,6 +2,92 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-18
+
+**Sécurité : le chemin des photos ne contient plus l'identifiant du créateur.**
+
+- `app/create/page.tsx` : le chemin de stockage passe de
+  `<player_id>/<uuid>` à `<aaaa-mm>/<uuid>`.
+
+Le chemin de l'objet se retrouve intégralement dans `photo_url` et
+`thumbnail_url` (`.../object/public/photos/<chemin>`), deux colonnes servies
+publiquement par la vue `active_hides` (feed `/play`) et par
+`get_hide_detail`. Le premier segment étant le `player_id` du créateur,
+**lire une URL du feed suffisait à récupérer l'identité du joueur**. Vérifié
+en base : sur les 6 cachettes existantes,
+`creator_id = split_part(split_part(photo_url,'/photos/',2),'/',1)` est vrai
+partout.
+
+Ce que cette identité permet, puisque les RPC accordent leurs droits sur la
+simple présentation d'un identifiant, sans preuve de possession :
+
+- **supprimer n'importe quelle cachette du feed.**
+  `delete_hide(p_hide_id, p_creator_id)` prend deux valeurs qui étaient toutes
+  les deux publiques — `active_hides.id` d'un côté, l'id extrait de l'URL de
+  l'autre. C'est le cas le plus grave : destruction du contenu d'autrui, sans
+  aucun obstacle.
+- publier une cachette ou consommer les 3 tentatives quotidiennes d'un autre
+  joueur (`create_hide`, `try_attempt`), et s'afficher sous son nom.
+
+Le correctif du 2026-08-14, qui avait retiré `creator_id` des colonnes
+renvoyées par les RPC, était donc contourné par une sous-chaîne d'URL : la
+colonne s'appelle `photo_url` et passe tous les contrôles « aucune colonne
+d'identifiant en sortie », mais elle transportait l'identifiant dans son
+chemin. Le contrôle de sécurité quotidien gagne une quatrième question en
+conséquence (ROADMAP) : *une valeur publique contient-elle un identifiant en
+sous-chaîne ?*
+
+Le dossier par joueur ne servait à rien : la seule policy du bucket
+(`anon upload photos`, INSERT) ne contrôle que `bucket_id`, jamais le dossier,
+et le listing du bucket est fermé depuis `010`. Le mois de publication est
+retenu comme préfixe parce qu'il ne révèle rien de neuf (`created_at` est déjà
+public dans le feed) et garde le bucket lisible dans le dashboard. Aucune
+migration, aucune RPC touchée, aucun changement de règle de jeu, coût Supabase
+et Vercel identique. Build Next vérifié ; ESLint inchangé (10 problèmes, tous
+antérieurs).
+
+**Les 6 cachettes déjà en base gardent leur URL** : le correctif ne vaut que
+pour les nouvelles publications, et la Storage API est le seul moyen de
+supprimer ces objets (voir ci-dessous). Aucune n'est active (3 `expired`,
+3 `deleted`), donc plus rien à leur supprimer, mais leurs `player_id` sont à
+considérer comme compromis — détail et marche à suivre dans le backlog.
+
+**Découverte pendant les tests : `cleanup_old_photos()` n'a jamais fonctionné.**
+
+Le job cron `cleanup-photos` échoue à chaque exécution depuis le 2026-07-17 :
+32 exécutions, 32 échecs, 0 succès (`cron.job_run_details`). Supabase interdit
+le `delete from storage.objects` en SQL via le trigger
+`storage.protect_delete()` (`ERROR 42501: Direct deletion from storage tables
+is not allowed. Use the Storage API instead.`). **Aucune photo n'a donc jamais
+été supprimée du bucket depuis la création du projet.** Les deux autres jobs
+cron vont bien (`expire-hides` : 776 succès ; `cleanup-code-attempts` : 31) —
+le gameplay n'est pas touché, seul le quota Storage grossit sans purge.
+
+C'était l'amélioration prévue aujourd'hui (item « Coût / free tier » du
+backlog : balayer les photos orphelines). La fonction étendue a été écrite,
+appliquée, testée — et c'est ce test qui a révélé que même la règle historique
+ne passait pas. La modification a été **annulée en base** (fonction restaurée
+à l'identique de `001_init.sql`, entrée de migration retirée) : il n'y avait
+aucun intérêt à livrer une règle de plus dans une fonction qui ne s'exécute
+jamais. Le vrai correctif passe par la Storage API et bute sur un secret à
+provisionner à la main — analyse complète et pistes en tête de backlog, en
+priorité haute. La faille ci-dessus, trouvée dans la foulée, a pris la place
+de l'amélioration du jour.
+
+**Dérive repo/base corrigée au passage.** La migration
+`restrict_active_hides_writes` (appliquée en base le 2026-08-16, version
+`20260816020847`) n'avait jamais été commitée — `supabase/migrations/` ne
+permettait donc plus de reconstruire la base. Reconstituée dans
+`015_restrict_active_hides_writes.sql`. Son `revoke` sur `active_hides` est
+sans effet (fausse alerte documentée le 2026-08-17), mais son `alter default
+privileges` est un vrai garde-fou pour les futures tables.
+
+**Contrôle de sécurité quotidien.** Droits d'exécution `anon` sur exactement
+les 11 RPC du client, RLS active sur les 5 tables et aucun grant
+`anon`/`authenticated` dessus, `active_hides` en lecture seule
+(`anon=r/postgres`) et sans colonne d'identifiant. Seul le quatrième contrôle,
+ajouté ce jour, a levé une anomalie — celle corrigée ici.
+
 ## 2026-08-17
 
 **Fiabilité : `/create` ne fait plus passer une panne réseau pour un état de
