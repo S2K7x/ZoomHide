@@ -2,6 +2,54 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-19
+
+**Fiabilité : un signalement qui échoue ne s'affiche plus comme envoyé.**
+
+- `components/HideGame.tsx` : la modale « Report this hide » lit désormais
+  l'`error` renvoyé par `supabase.rpc("report_hide", …)` au lieu de l'ignorer.
+
+C'était la dernière occurrence dans le code du motif corrigé le 2026-08-01 sur
+`/play` et `/leaderboard`, puis le 2026-08-17 sur `/create` : `await
+supabase.rpc(...)` sans lire le retour, suivi d'un passage inconditionnel à
+l'état « succès ». Ici, `setReportDone(true)` s'exécutait quoi qu'il arrive, et
+le joueur lisait **« Thanks, the hide has been reported »** alors que, sur
+coupure réseau ou panne Supabase, aucune ligne `reports` n'avait été créée. Le
+cas est peu fréquent mais c'est le pire endroit pour mentir au joueur : il
+croit une photo inappropriée signalée, ne recommence pas, et le rapport
+n'existe nulle part.
+
+`report_hide` renvoie `void` et ne peut pas échouer fonctionnellement (un
+simple `insert into reports`), donc il n'y a pas de code d'erreur métier à
+traduire : seul l'`error` transport de Supabase est à traiter. La modale garde
+le formulaire ouvert avec un message (`role="alert"`, lu par les lecteurs
+d'écran) et le bouton passe de « Send » à « Retry » — le texte saisi n'est pas
+perdu, l'envoi est rejouable sur place. La fermeture de la modale (Échap, clic
+en dehors, Cancel, Close) passe par un `closeReport` commun qui remet l'erreur
+à zéro, pour ne pas la retrouver à la réouverture.
+
+Aucune migration, aucune RPC touchée, aucune règle de jeu modifiée, aucune
+requête supplémentaire — coût Supabase et Vercel identique. Build Next vérifié
+(12 routes générées) ; ESLint inchangé (10 problèmes, tous antérieurs).
+
+**Reste volontairement en l'état** : `get_hide_statuses` (`/play`) et
+`get_my_rank` (`/leaderboard`) continuent d'ignorer leur `error`. Ce sont des
+enrichissements secondaires — leur échec fait disparaître des badges ou la
+ligne « you », sans jamais affirmer au joueur quelque chose de faux. Décision
+notée dans le ROADMAP pour ne pas la re-litiger chaque jour.
+
+**Contrôle de sécurité quotidien : les quatre contrôles passent sans anomalie
+nouvelle.** Droits d'exécution `anon` sur exactement les 11 RPC appelées par le
+client (`cleanup_old_photos`, `expire_hides` et `upsert_player` restent fermées) ;
+RLS active sur les 5 tables et aucun grant `anon`/`authenticated` dessus ;
+`active_hides` en `anon=r/postgres` (lecture seule) et sans colonne
+d'identifiant ; aucune migration appliquée en base absente du repo (dernière :
+`20260816020847`, la dérive du 2026-08-18 ne s'est pas reproduite). Le
+quatrième contrôle (identifiant en sous-chaîne d'une valeur publique) renvoie
+toujours `true` sur les 6 lignes historiques : aucune cachette n'a été publiée
+depuis le 2026-07-30, donc rien de neuf — c'est l'item de nettoyage manuel du
+backlog, pas une régression.
+
 ## 2026-08-18
 
 **Sécurité : le chemin des photos ne contient plus l'identifiant du créateur.**

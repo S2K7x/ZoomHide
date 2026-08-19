@@ -100,6 +100,14 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   `select creator_id = split_part(split_part(photo_url,'/photos/',2),'/',1)
   from hides;` — doit être `false` partout (les lignes antérieures au
   2026-08-18 sont à `true`, voir l'item de nettoyage manuel ci-dessus).
+  **Le 2026-08-19, les quatre contrôles sont repassés sans anomalie nouvelle** :
+  droits d'exécution `anon` exactement sur les 11 RPC listées, RLS active et
+  aucun grant `anon`/`authenticated` sur les 5 tables, `active_hides` en
+  `anon=r/postgres` et sans colonne d'identifiant, aucune migration appliquée
+  en base absente du repo (dernière : `20260816020847`). Le quatrième contrôle
+  reste à `true` sur les 6 lignes historiques — aucune publication depuis le
+  2026-07-30, donc rien de neuf : c'est l'item de nettoyage manuel ci-dessus,
+  pas une régression.
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -143,14 +151,13 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   hide… » dans `components/PrivatePlay.tsx`), alors que `/play`,
   `/leaderboard`, `ZoomPanViewer` et `RevealShare` ont tous un squelette
   `.zh-skeleton`. C'est pourtant l'écran d'atterrissage des liens partagés.
-- Fiabilité (priorité basse) : `report_hide` est appelée sans lire son retour
-  dans `components/HideGame.tsx` — la modale affiche « Thanks, the hide has
-  been reported » même quand la requête a échoué. Même classe de bug que celui
-  corrigé sur `/create` le 2026-08-17. Les deux autres appels dont l'erreur
-  reste ignorée (`get_hide_statuses` sur `/play`, `get_my_rank` sur
-  `/leaderboard`) sont des enrichissements secondaires : leur échec dégrade
-  l'affichage (badges ou ligne « you » absents) sans jamais annoncer au joueur
-  quelque chose de faux — à laisser tels quels.
+- Note (décision, pas un item) : les deux derniers appels dont l'`error` reste
+  volontairement ignoré sont `get_hide_statuses` sur `/play` et `get_my_rank`
+  sur `/leaderboard`. Ce sont des enrichissements secondaires : leur échec
+  dégrade l'affichage (badges ou ligne « you » absents) sans jamais annoncer au
+  joueur quelque chose de faux — à laisser tels quels. Tous les autres appels
+  Supabase du code lisent désormais leur `error` (dernier corrigé :
+  `report_hide`, le 2026-08-19).
 - Note : l'index composite sur `attempts(hide_id, player_id, ...)` évoqué
   précédemment existe déjà (`idx_attempts_daily`, migration `001_init.sql`)
   — retiré du backlog, rien à faire.
@@ -160,6 +167,17 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-19** — Fiabilité : la modale « Report this hide »
+  (`components/HideGame.tsx`) ne confirme plus un signalement qui n'a pas été
+  enregistré. `report_hide` était appelée sans lire l'`error` renvoyé par
+  Supabase : sur coupure réseau ou panne, l'écran affichait quand même
+  « Thanks, the hide has been reported » alors qu'aucune ligne `reports`
+  n'était créée. Dernière occurrence du motif corrigé sur `/play` et
+  `/leaderboard` le 2026-08-01 puis sur `/create` le 2026-08-17. La modale
+  garde maintenant le formulaire ouvert avec un message d'erreur
+  (`role="alert"`) et un bouton « Retry », le texte saisi n'est pas perdu.
+  Aucune migration, aucune RPC touchée, aucun coût supplémentaire.
 
 - **2026-08-18** — Sécurité : le chemin de stockage des photos ne contient
   plus le `player_id` du créateur (`app/create/page.tsx`). Il valait
