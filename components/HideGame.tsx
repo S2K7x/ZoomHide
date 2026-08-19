@@ -103,6 +103,7 @@ export default function HideGame({
   const [reportReason, setReportReason] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportDone, setReportDone] = useState(false);
+  const [reportError, setReportError] = useState("");
   const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
   const [linkCopied, setLinkCopied] = useState(false);
 
@@ -112,14 +113,19 @@ export default function HideGame({
   const color = detail?.sticker_color ?? DEFAULT_COLOR;
   const resetLabel = useResetCountdown(!!detail && !detail.is_creator && !found && attemptsLeft === 0);
 
+  const closeReport = useCallback(() => {
+    setShowReport(false);
+    setReportError("");
+  }, []);
+
   useEffect(() => {
     if (!showReport || reportSubmitting) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowReport(false);
+      if (e.key === "Escape") closeReport();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [showReport, reportSubmitting]);
+  }, [showReport, reportSubmitting, closeReport]);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_hide_detail", {
@@ -387,7 +393,7 @@ export default function HideGame({
       {showReport && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-6"
-          onClick={() => !reportSubmitting && setShowReport(false)}
+          onClick={() => !reportSubmitting && closeReport()}
         >
           <div
             className="zh-card w-full max-w-sm p-5 flex flex-col gap-3"
@@ -398,7 +404,7 @@ export default function HideGame({
                 <p className="text-center font-semibold">Thanks, the hide has been reported.</p>
                 <button
                   onClick={() => {
-                    setShowReport(false);
+                    closeReport();
                     setReportDone(false);
                     setReportReason("");
                   }}
@@ -419,9 +425,12 @@ export default function HideGame({
                   rows={3}
                   className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-sm resize-none"
                 />
+                {reportError && (
+                  <p role="alert" className="text-sm text-rose-300">{reportError}</p>
+                )}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setShowReport(false)}
+                    onClick={closeReport}
                     disabled={reportSubmitting}
                     className="zh-btn zh-btn-ghost flex-1 py-2.5"
                   >
@@ -430,18 +439,27 @@ export default function HideGame({
                   <button
                     onClick={async () => {
                       setReportSubmitting(true);
-                      await supabase.rpc("report_hide", {
+                      setReportError("");
+                      // On lit l'`error` renvoyé par Supabase : sans ça, une
+                      // coupure réseau affichait quand même « Thanks, the hide
+                      // has been reported » alors qu'aucune ligne `reports`
+                      // n'était créée.
+                      const { error } = await supabase.rpc("report_hide", {
                         p_hide_id: hideId,
                         p_reporter_id: getPlayerId(),
                         p_reason: reportReason,
                       });
                       setReportSubmitting(false);
+                      if (error) {
+                        setReportError("Couldn't send the report. Check your connection and try again.");
+                        return;
+                      }
                       setReportDone(true);
                     }}
                     disabled={reportSubmitting || !reportReason.trim()}
                     className="zh-btn zh-btn-primary flex-1 py-2.5"
                   >
-                    {reportSubmitting ? "Sending…" : "Send"}
+                    {reportSubmitting ? "Sending…" : reportError ? "Retry" : "Send"}
                   </button>
                 </div>
               </>
