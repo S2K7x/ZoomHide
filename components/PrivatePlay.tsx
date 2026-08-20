@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import HideGame from "@/components/HideGame";
+import GameSkeleton from "@/components/GameSkeleton";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,12 +58,11 @@ export default function PrivatePlay({ initialToken }: { initialToken?: string })
     return <HideGame hideId={hideId} backHref="/play" backLabel="Feed" />;
   }
 
-  // token en cours de résolution, sans erreur -> écran d'attente
-  if (initialToken && UUID_RE.test(initialToken) === false && resolving) {
-    return <p className="p-8 text-center text-white/60">Unlocking hide…</p>;
-  }
-  if (initialToken && UUID_RE.test(initialToken)) {
-    return <p className="p-8 text-center text-white/60">Unlocking hide…</p>;
+  // token en cours de résolution, sans erreur -> écran d'attente. Squelette de
+  // l'écran de jeu (et non un texte) : c'est lui qui suit, la transition est
+  // donc sans rupture. Le libellé reste porté par l'`aria-label`.
+  if (initialToken && (UUID_RE.test(initialToken) || resolving)) {
+    return <GameSkeleton label="Unlocking hide" />;
   }
 
   const go = () => {
