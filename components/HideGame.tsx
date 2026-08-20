@@ -8,6 +8,7 @@ import { shapeDataUrl, getShape, DEFAULT_COLOR, HINT_COLOR } from "@/lib/sticker
 import ZoomPanViewer from "@/components/ZoomPanViewer";
 import RevealShare from "@/components/RevealShare";
 import Avatar from "@/components/Avatar";
+import GameSkeleton from "@/components/GameSkeleton";
 
 type Reveal = { pos_x: number; pos_y: number; size_pct: number; rotation: number };
 type PastAttempt = { x: number; y: number; distance: number };
@@ -238,7 +239,7 @@ export default function HideGame({
     );
   }
   if (!detail) {
-    return <p className="p-8 text-center text-white/60">Loading…</p>;
+    return <GameSkeleton />;
   }
 
   const gameOver = found || (attemptsLeft === 0 && result != null) || detail.is_creator;

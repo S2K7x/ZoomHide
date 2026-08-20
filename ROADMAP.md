@@ -108,6 +108,14 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   reste à `true` sur les 6 lignes historiques — aucune publication depuis le
   2026-07-30, donc rien de neuf : c'est l'item de nettoyage manuel ci-dessus,
   pas une régression.
+  **Le 2026-08-20, les quatre contrôles sont repassés sans anomalie nouvelle**,
+  état strictement identique à la veille : exécution `anon`/`authenticated` sur
+  exactement les 11 RPC du client (`cleanup_old_photos`, `expire_hides`,
+  `upsert_player` fermées), RLS active et `relacl` sans grant `anon` sur les
+  5 tables, `active_hides` en `anon=r/postgres` avec 11 colonnes dont aucune
+  d'identifiant, 15 migrations en base = 15 fichiers dans le repo (dernière :
+  `20260816020847`, aucune dérive). Quatrième contrôle toujours à `true` sur
+  les mêmes 6 lignes historiques, aucune nouvelle publication.
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -146,11 +154,20 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   dans le `catch`/la branche `already_active` de `publish()`, et/ou étendre
   `cleanup_old_photos()` aux objets sans `hides` correspondant et vieux de plus
   de 24 h (plus robuste : couvre aussi l'onglet fermé en cours d'upload).
-- UX (priorité basse) : l'écran de jeu est le dernier à afficher un
-  « Loading… » en texte brut (`components/HideGame.tsx`, plus « Unlocking
-  hide… » dans `components/PrivatePlay.tsx`), alors que `/play`,
-  `/leaderboard`, `ZoomPanViewer` et `RevealShare` ont tous un squelette
-  `.zh-skeleton`. C'est pourtant l'écran d'atterrissage des liens partagés.
+- UX / accessibilité (priorité moyenne, repéré le 2026-08-20) : le retour de
+  tentative de `components/HideGame.tsx` (`feedback` : « 🔥 Burning! So
+  close… », « 🧊 Cold, look elsewhere. », « Network error, try again. ») est
+  rendu dans un `<p>` sans `role="alert"` ni `aria-live`. Un lecteur d'écran
+  n'annonce donc rien après un tap soumis : le joueur non-voyant ne sait pas
+  si sa tentative est passée ni ce qu'elle vaut. Même remarque pour le
+  compteur « Attempts left today ». La modale de report a déjà le
+  `role="alert"` (2026-08-19) — il s'agit d'appliquer le même traitement au
+  cœur de la boucle de jeu.
+- Code (priorité basse) : `HideGame` accepte une prop `backLabel` (valeur par
+  défaut `"Feed"`, passée explicitement par `PrivatePlay`) qui n'est utilisée
+  nulle part dans le rendu — le bouton retour n'affiche qu'une flèche. Soit
+  l'afficher à côté de la flèche, soit retirer la prop et l'argument de
+  `PrivatePlay`.
 - Note (décision, pas un item) : les deux derniers appels dont l'`error` reste
   volontairement ignoré sont `get_hide_statuses` sur `/play` et `get_my_rank`
   sur `/leaderboard`. Ce sont des enrichissements secondaires : leur échec
@@ -167,6 +184,19 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-20** — UX : squelette de chargement sur l'écran de jeu
+  (`components/GameSkeleton.tsx`, utilisé par `components/HideGame.tsx` et
+  `components/PrivatePlay.tsx`), dernier endroit du code à afficher un
+  « Loading… » / « Unlocking hide… » en texte brut. C'est pourtant l'écran
+  d'atterrissage des liens partagés : le squelette reprend la structure réelle
+  du jeu (barre du haut, cadre photo, zone de contrôles) et réutilise
+  exactement le cadre de `ZoomPanViewer` (ratio 1:1, `maxHeight: 72dvh`, même
+  état de chargement 🔎), donc l'arrivée des données ne déplace plus rien à
+  l'écran. `role="status"` + `aria-label` conservent l'information pour les
+  lecteurs d'écran (« Unlocking hide » côté privé). Aucune requête, aucune
+  migration, aucune règle de jeu touchée. Contrôle de sécurité quotidien passé
+  sans anomalie le même jour (détails dans le premier item du backlog).
 
 - **2026-08-19** — Fiabilité : la modale « Report this hide »
   (`components/HideGame.tsx`) ne confirme plus un signalement qui n'a pas été

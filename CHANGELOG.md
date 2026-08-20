@@ -2,6 +2,62 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-20
+
+**UX : l'écran de jeu a enfin un squelette de chargement.**
+
+- `components/GameSkeleton.tsx` (nouveau) : squelette reprenant la structure
+  réelle de l'écran de jeu.
+- `components/HideGame.tsx` : remplace `<p>Loading…</p>` pendant l'attente de
+  `get_hide_detail`.
+- `components/PrivatePlay.tsx` : remplace les deux `<p>Unlocking hide…</p>`
+  pendant la résolution d'un lien/code privé.
+
+C'était le dernier endroit du code à afficher un « Loading… » en texte brut,
+alors que `/play`, `/leaderboard`, `ZoomPanViewer` et `RevealShare` ont tous un
+squelette `.zh-skeleton` depuis fin juillet. Et c'est le pire endroit pour le
+laisser : `/play/[hideId]` est l'écran d'atterrissage des liens partagés, donc
+souvent le tout premier écran qu'un joueur voit du jeu — une ligne de texte
+grise centrée dans une page vide, puis un saut brutal vers l'interface
+complète.
+
+Le squelette calque la structure rendue par `HideGame` (barre du haut : rond
+de retour, pastille « Find the … », avatar + pseudo du créateur ; cadre photo ;
+zone de contrôles : ligne d'infos + bouton). Le cadre photo est **le même** que
+celui de `ZoomPanViewer` (ratio 1:1 par défaut, `maxHeight: 72dvh`, fond
+`bg-neutral-900`, même bloc de chargement 🔎) : quand `get_hide_detail`
+répond, le viewer prend le relais dans son propre état de chargement sans
+clignotement ni saut de mise en page, jusqu'à ce que la photo soit décodée.
+
+Accessibilité : le conteneur porte `role="status"` + `aria-busy="true"` et un
+`aria-label` (« Loading hide », ou « Unlocking hide » côté privé) — le texte
+que le squelette remplace visuellement reste donc annoncé aux lecteurs
+d'écran. L'animation shimmer est déjà neutralisée par la règle
+`prefers-reduced-motion` globale de `app/globals.css`.
+
+Nettoyage au passage dans `PrivatePlay` : les deux branches d'attente
+retournaient le même écran avec des conditions complémentaires
+(`!UUID && resolving`, puis `UUID`) — fusionnées en une seule, comportement
+identique.
+
+Aucune migration, aucune RPC, aucune requête supplémentaire, aucune dépendance
+ajoutée (Tailwind + la classe `.zh-skeleton` existante) : coût Supabase et
+Vercel identique. Build Next vérifié (12 routes générées) ; ESLint inchangé
+(10 problèmes, tous antérieurs).
+
+**Contrôle de sécurité quotidien : les quatre contrôles passent sans anomalie
+nouvelle**, état strictement identique à la veille. Droits d'exécution
+`anon`/`authenticated` sur exactement les 11 RPC appelées par le client
+(`cleanup_old_photos`, `expire_hides` et `upsert_player` restent fermées) ;
+RLS active sur les 5 tables, dont les `relacl` ne portent que
+`postgres`/`service_role` ; `active_hides` en `anon=r/postgres` (lecture
+seule) avec 11 colonnes, aucune d'identifiant ; 15 migrations en base pour 15
+fichiers dans `supabase/migrations/` (dernière : `20260816020847`, aucune
+dérive). Le quatrième contrôle (identifiant en sous-chaîne d'une valeur
+publique) renvoie toujours `true` sur les 6 lignes historiques — aucune
+cachette publiée depuis le 2026-07-30, c'est l'item de nettoyage manuel du
+backlog, pas une régression.
+
 ## 2026-08-19
 
 **Fiabilité : un signalement qui échoue ne s'affiche plus comme envoyé.**
