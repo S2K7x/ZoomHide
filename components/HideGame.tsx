@@ -244,6 +244,21 @@ export default function HideGame({
 
   const gameOver = found || (attemptsLeft === 0 && result != null) || detail.is_creator;
 
+  // Message annoncé aux lecteurs d'écran après chaque tentative. Le retour
+  // visible (feedback, compteur, écran de fin) est `aria-hidden` : il est repris
+  // mot pour mot ici, dans une région live montée une fois pour toutes, donc
+  // rien n'est perdu en lecture au parcours et rien n'est lu deux fois.
+  // Volontairement sans `resetLabel` (il change chaque minute : ça relancerait
+  // une annonce en boucle) et sans le message du créateur (statique, présent dès
+  // le premier rendu, donc déjà lu normalement).
+  const liveMessage = detail.is_creator
+    ? ""
+    : found
+    ? `Found${result?.success ? ` in ${Math.round(timeMs / 1000)} seconds` : ""}!`
+    : attemptsLeft === 0
+    ? `No attempts left today.${reveal ? " The shape is now circled on the photo." : " Come back tomorrow!"}`
+    : `${feedback ? `${feedback} ` : ""}${attemptsLeft} ${attemptsLeft > 1 ? "attempts" : "attempt"} left today.`;
+
   return (
     <div className="flex flex-col gap-3 pt-4">
       <div className="px-4 flex items-center justify-between">
@@ -304,13 +319,16 @@ export default function HideGame({
       </ZoomPanViewer>
 
       <div className="px-4 flex flex-col gap-3 pb-6">
+        <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+          {liveMessage}
+        </p>
         {detail.is_creator ? (
           <p className="text-center text-white/70 text-sm">
             This is your hide — the circle marks your shape. You can&apos;t play your own.
           </p>
         ) : found ? (
           <>
-            <p className="text-center text-xl font-black text-amber-300">
+            <p aria-hidden="true" className="text-center text-xl font-black text-amber-300">
               🎉 Found{result?.success ? ` in ${Math.round(timeMs / 1000)}s` : ""}!
             </p>
             {reveal && result?.success && (
@@ -328,7 +346,7 @@ export default function HideGame({
             )}
           </>
         ) : attemptsLeft === 0 ? (
-          <p className="text-center text-white/80">
+          <p aria-hidden="true" className="text-center text-white/80">
             😵 No attempts left today.
             {reveal
               ? " The shape was here 👆"
@@ -339,13 +357,13 @@ export default function HideGame({
         ) : (
           <>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-white/70">
+              <span aria-hidden="true" className="text-white/70">
                 Attempts left today:{" "}
                 <b className="text-white">{"●".repeat(attemptsLeft)}{"○".repeat(3 - attemptsLeft)}</b>
               </span>
               <span className="text-white/50 text-xs">Pinch to zoom</span>
             </div>
-            {feedback && <p className="text-center font-semibold">{feedback}</p>}
+            {feedback && <p aria-hidden="true" className="text-center font-semibold">{feedback}</p>}
             {pastAttempts.length > 0 && (
               <p className="text-center text-xs text-white/40">
                 Colored rings mark your past taps — 🧊 blue is cold, 🔥 red is close.
