@@ -116,6 +116,14 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   d'identifiant, 15 migrations en base = 15 fichiers dans le repo (dernière :
   `20260816020847`, aucune dérive). Quatrième contrôle toujours à `true` sur
   les mêmes 6 lignes historiques, aucune nouvelle publication.
+  **Le 2026-08-21, les quatre contrôles sont repassés sans anomalie nouvelle**,
+  état encore identique : exécution `anon`/`authenticated` sur exactement les
+  11 RPC du client (`cleanup_old_photos`, `expire_hides`, `upsert_player`
+  fermées), RLS active sur les 5 tables dont les `relacl` ne portent que
+  `postgres`/`service_role`, `active_hides` en `anon=r/postgres` avec 11
+  colonnes sans identifiant, 15 migrations en base pour 15 fichiers dans le
+  repo. Quatrième contrôle toujours à `true` sur les 6 mêmes lignes
+  historiques (3 `expired`, 3 `deleted`, dernière publication le 2026-07-30).
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -154,15 +162,6 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   dans le `catch`/la branche `already_active` de `publish()`, et/ou étendre
   `cleanup_old_photos()` aux objets sans `hides` correspondant et vieux de plus
   de 24 h (plus robuste : couvre aussi l'onglet fermé en cours d'upload).
-- UX / accessibilité (priorité moyenne, repéré le 2026-08-20) : le retour de
-  tentative de `components/HideGame.tsx` (`feedback` : « 🔥 Burning! So
-  close… », « 🧊 Cold, look elsewhere. », « Network error, try again. ») est
-  rendu dans un `<p>` sans `role="alert"` ni `aria-live`. Un lecteur d'écran
-  n'annonce donc rien après un tap soumis : le joueur non-voyant ne sait pas
-  si sa tentative est passée ni ce qu'elle vaut. Même remarque pour le
-  compteur « Attempts left today ». La modale de report a déjà le
-  `role="alert"` (2026-08-19) — il s'agit d'appliquer le même traitement au
-  cœur de la boucle de jeu.
 - Code (priorité basse) : `HideGame` accepte une prop `backLabel` (valeur par
   défaut `"Feed"`, passée explicitement par `PrivatePlay`) qui n'est utilisée
   nulle part dans le rendu — le bouton retour n'affiche qu'une flèche. Soit
@@ -184,6 +183,23 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-21** — Accessibilité : le résultat d'une tentative est enfin annoncé
+  aux lecteurs d'écran (`components/HideGame.tsx`). Le retour de tap (« 🔥
+  Burning! So close… », « 🧊 Cold, look elsewhere. », « Network error, try
+  again. »), le compteur de tentatives restantes (des pastilles `●●○`,
+  illisibles à la voix) et les écrans de fin (trouvé / plus de tentatives)
+  étaient rendus dans des `<p>` ordinaires, chacun dans une branche différente
+  du rendu : un joueur non-voyant soumettait un tap et n'entendait
+  strictement rien. Une seule région live (`role="status"`, `aria-live="polite"`,
+  `aria-atomic="true"`, `sr-only`) est maintenant montée en permanence au-dessus
+  des branches et porte le message complet (« 🧊 Cold, look elsewhere. 2
+  attempts left today. ») ; les textes visibles correspondants passent en
+  `aria-hidden` pour éviter la double lecture. Le compte à rebours de
+  réinitialisation est volontairement exclu du message annoncé (il change chaque
+  minute, il relancerait une annonce en boucle). Aucune migration, aucune
+  requête, aucune règle de jeu touchée. Contrôle de sécurité quotidien passé
+  sans anomalie le même jour (détails dans le premier item du backlog).
 
 - **2026-08-20** — UX : squelette de chargement sur l'écran de jeu
   (`components/GameSkeleton.tsx`, utilisé par `components/HideGame.tsx` et

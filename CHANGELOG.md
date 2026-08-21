@@ -2,6 +2,60 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-21
+
+**Accessibilité : le résultat d'une tentative est enfin annoncé aux lecteurs
+d'écran.**
+
+- `components/HideGame.tsx` : une région live `sr-only` (`role="status"`,
+  `aria-live="polite"`, `aria-atomic="true"`) montée en permanence dans la zone
+  de contrôles, portant le message d'état complet ; les textes visibles qu'elle
+  reprend passent en `aria-hidden`.
+
+Le cœur de la boucle de jeu était muet. Le joueur tape sur la photo, soumet, et
+le serveur répond « 🔥 Burning! So close… » ou « 🧊 Cold, look elsewhere. » —
+mais ce retour était rendu dans un `<p>` ordinaire, sans `role` ni `aria-live` :
+aucun lecteur d'écran n'annonce une insertion de texte silencieuse. Un joueur
+non-voyant soumettait donc une tentative et n'entendait rien du tout, ni le
+résultat, ni le fait que la tentative était bien passée, ni « Network error, try
+again. » quand elle avait échoué. Même angle mort pour le compteur de tentatives
+restantes, dessiné en pastilles `●●○` (lues « cercle noir cercle noir cercle
+blanc », si tant est qu'elles soient lues) et pour les deux écrans de fin
+(« 🎉 Found in 12s! », « 😵 No attempts left today. »).
+
+Le point délicat, c'est que ces quatre messages vivent dans **quatre branches
+différentes** du même ternaire : mettre `aria-live` sur chacun ne marcherait
+pas, une région live qui apparaît en même temps que son contenu (ou qui est
+démontée par un changement de branche) n'annonce rien de fiable. D'où le choix
+d'une région unique, montée dès que la cachette est chargée et jamais démontée,
+qui reçoit le message composé à partir de l'état : « 🧊 Cold, look elsewhere. 2
+attempts left today. » Les branches visibles ne changent pas d'un pixel ; elles
+sont simplement retirées de l'arbre d'accessibilité (`aria-hidden`) pour que le
+même texte ne soit pas lu deux fois — au parcours, il reste disponible dans la
+région live.
+
+Deux exclusions volontaires du message annoncé : le compte à rebours de
+réinitialisation (« Reset in 5h 12m »), qui change chaque minute et relancerait
+une annonce en boucle — remplacé par « Come back tomorrow! » à la voix — et le
+message du créateur sur sa propre cachette, statique et présent dès le premier
+rendu, donc déjà lu normalement.
+
+Aucune migration, aucune RPC, aucune requête supplémentaire, aucune dépendance
+(la classe `sr-only` vient de Tailwind) : coût Supabase et Vercel strictement
+identique. Build Next vérifié (12 routes générées) ; ESLint inchangé (10
+problèmes, tous antérieurs).
+
+**Contrôle de sécurité quotidien : les quatre contrôles passent sans anomalie
+nouvelle**, état identique à la veille. Exécution `anon`/`authenticated` sur
+exactement les 11 RPC appelées par le client (`cleanup_old_photos`,
+`expire_hides` et `upsert_player` restent fermées) ; RLS active sur les 5
+tables, `relacl` limitées à `postgres`/`service_role` ; `active_hides` en
+`anon=r/postgres` avec 11 colonnes, aucune d'identifiant ; 15 migrations en base
+pour 15 fichiers dans `supabase/migrations/`. Le quatrième contrôle
+(identifiant en sous-chaîne d'une valeur publique) renvoie toujours `true` sur
+les 6 lignes historiques — aucune publication depuis le 2026-07-30, c'est
+l'item de nettoyage manuel du backlog, pas une régression.
+
 ## 2026-08-20
 
 **UX : l'écran de jeu a enfin un squelette de chargement.**
