@@ -81,10 +81,13 @@ const ERRORS: Record<string, string> = {
 
 // Vue de jeu réutilisée par /play/[hideId] (public) et /play/private/[code].
 // `backHref` : où renvoie la flèche retour selon le contexte.
+// `backLabel` : nom de la destination, utilisé comme nom accessible de la
+// flèche (« Back to the feed ») — le bouton n'affiche qu'un « ← », qui ne dit
+// rien à un lecteur d'écran.
 export default function HideGame({
   hideId,
   backHref = "/play",
-  backLabel = "Feed",
+  backLabel = "the feed",
 }: {
   hideId: string;
   backHref?: string;
@@ -234,7 +237,7 @@ export default function HideGame({
     return (
       <div className="px-6 pt-20 text-center flex flex-col gap-4">
         <p className="text-lg">{loadError}</p>
-        <Link href={backHref} className="text-violet-300 underline">← Back</Link>
+        <Link href={backHref} className="text-violet-300 underline">← Back to {backLabel}</Link>
       </div>
     );
   }
@@ -262,8 +265,14 @@ export default function HideGame({
   return (
     <div className="flex flex-col gap-3 pt-4">
       <div className="px-4 flex items-center justify-between">
-        <Link href={backHref} className="grid place-items-center w-9 h-9 rounded-full zh-card text-white/70">
-          ←
+        {/* Lien icône seule : le « ← » n'a pas de nom accessible, d'où
+            l'`aria-label` construit sur la destination. */}
+        <Link
+          href={backHref}
+          aria-label={`Back to ${backLabel}`}
+          className="grid place-items-center w-9 h-9 rounded-full zh-card text-white/70"
+        >
+          <span aria-hidden="true">←</span>
         </Link>
         <div className="flex items-center gap-2 rounded-full zh-card px-3 py-1.5 text-sm">
           <span className="text-white/60">Find the</span>

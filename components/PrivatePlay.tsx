@@ -55,7 +55,7 @@ export default function PrivatePlay({ initialToken }: { initialToken?: string })
   }, [initialToken, resolveCode]);
 
   if (hideId) {
-    return <HideGame hideId={hideId} backHref="/play" backLabel="Feed" />;
+    return <HideGame hideId={hideId} backHref="/play" backLabel="the public feed" />;
   }
 
   // token en cours de résolution, sans erreur -> écran d'attente. Squelette de

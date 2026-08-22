@@ -6,5 +6,5 @@ export default async function HidePage({
   params: Promise<{ hideId: string }>;
 }) {
   const { hideId } = await params;
-  return <HideGame hideId={hideId} backHref="/play" backLabel="Feed" />;
+  return <HideGame hideId={hideId} backHref="/play" backLabel="the feed" />;
 }

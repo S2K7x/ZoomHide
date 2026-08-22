@@ -124,6 +124,14 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   colonnes sans identifiant, 15 migrations en base pour 15 fichiers dans le
   repo. Quatrième contrôle toujours à `true` sur les 6 mêmes lignes
   historiques (3 `expired`, 3 `deleted`, dernière publication le 2026-07-30).
+  **Le 2026-08-22, les quatre contrôles sont repassés sans anomalie nouvelle**,
+  état encore identique : exécution `anon`/`authenticated` sur exactement les
+  11 RPC du client (`cleanup_old_photos`, `expire_hides`, `upsert_player`
+  fermées), RLS active sur les 5 tables dont les `relacl` ne portent que
+  `postgres`/`service_role`, `active_hides` en `anon=r/postgres` avec ses 11
+  colonnes sans identifiant, 15 migrations en base pour 15 fichiers dans le
+  repo (dernière : `20260816020847`). Quatrième contrôle toujours à `true` sur
+  les 6 mêmes lignes historiques.
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -162,11 +170,28 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   dans le `catch`/la branche `already_active` de `publish()`, et/ou étendre
   `cleanup_old_photos()` aux objets sans `hides` correspondant et vieux de plus
   de 24 h (plus robuste : couvre aussi l'onglet fermé en cours d'upload).
-- Code (priorité basse) : `HideGame` accepte une prop `backLabel` (valeur par
-  défaut `"Feed"`, passée explicitement par `PrivatePlay`) qui n'est utilisée
-  nulle part dans le rendu — le bouton retour n'affiche qu'une flèche. Soit
-  l'afficher à côté de la flèche, soit retirer la prop et l'argument de
-  `PrivatePlay`.
+- Fiabilité (nouvelle idée du 2026-08-22, priorité moyenne) : « 🔗 Share this
+  hide » (`components/HideGame.tsx`, `shareHide`) échoue en silence quand
+  `navigator.clipboard.writeText` lève — cas réel sur iOS Safari hors geste
+  utilisateur direct, et sur tout contexte non sécurisé. Le joueur clique, le
+  libellé ne passe pas à « ✅ Link copied! », et rien ne lui dit pourquoi.
+  Repli possible : message « Couldn't copy — long-press the address bar » ou
+  un champ en lecture seule contenant l'URL, sélectionnable à la main. Même
+  motif que les `catch` silencieux corrigés les 2026-08-01/17/19, dernier
+  restant sur un retour visible au joueur.
+- Accessibilité (nouvelle idée du 2026-08-22, priorité basse) : les anneaux des
+  tentatives passées (`heatColor` dans `components/HideGame.tsx`) ne
+  transportent leur information — froid / tiède / chaud / brûlant — que par la
+  couleur (sky / yellow / orange / rose). Un joueur daltonien voit quatre
+  ronds identiques, et la légende ne parle qu'en couleurs (« 🧊 blue is cold,
+  🔥 red is close »). Pistes sans changer le gameplay : épaisseur ou opacité de
+  bordure croissante avec la proximité, et/ou un `title`/`aria-label` par
+  anneau (« Cold, 42% away »).
+- UX / rétention (nouvelle idée du 2026-08-22, priorité basse) : l'écran de fin
+  (« 🎉 Found in 12s! », « 😵 No attempts left today. ») n'offre aucune suite —
+  il faut repasser par la flèche retour pour trouver une autre cachette. Un
+  bouton « Play another hide → » vers `/play` sous le résultat coûterait zéro
+  requête et fermerait la boucle de jeu.
 - Note (décision, pas un item) : les deux derniers appels dont l'`error` reste
   volontairement ignoré sont `get_hide_statuses` sur `/play` et `get_my_rank`
   sur `/leaderboard`. Ce sont des enrichissements secondaires : leur échec
@@ -183,6 +208,23 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-22** — Accessibilité / dette : la flèche retour de l'écran de jeu a
+  enfin un nom accessible, et la prop morte `backLabel` de
+  `components/HideGame.tsx` sert enfin à quelque chose. Le lien était un rond
+  contenant le seul caractère `←` : son nom accessible valait « ← », lu
+  « flèche vers la gauche » ou rien du tout selon le lecteur d'écran, alors que
+  c'est la seule sortie de l'écran d'atterrissage des liens partagés. La prop
+  `backLabel` (`"Feed"`, passée explicitement par les deux appelants) décrivait
+  exactement la destination mais n'était lue nulle part dans le rendu — seule
+  alerte ESLint du repo (`@typescript-eslint/no-unused-vars`). Elle devient le
+  nom accessible (`aria-label={\`Back to ${backLabel}\`}`, le `←` passant en
+  `aria-hidden`) et le libellé visible du lien de l'écran d'erreur
+  (« ← Back to the feed »). Valeurs : « the feed » en public, « the public
+  feed » depuis une cachette privée. Aucun changement visuel sur la barre du
+  haut (déjà serrée en 390px), aucune requête, aucune migration, aucune règle
+  de jeu touchée. Contrôle de sécurité quotidien passé sans anomalie le même
+  jour (détails dans le premier item du backlog).
 
 - **2026-08-21** — Accessibilité : le résultat d'une tentative est enfin annoncé
   aux lecteurs d'écran (`components/HideGame.tsx`). Le retour de tap (« 🔥

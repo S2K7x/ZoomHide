@@ -2,6 +2,69 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-22
+
+**Accessibilité : la flèche retour de l'écran de jeu a enfin un nom — porté par
+la prop `backLabel`, morte depuis sa création.**
+
+- `components/HideGame.tsx` : le lien retour prend
+  `aria-label={\`Back to ${backLabel}\`}`, le caractère `←` passe en
+  `aria-hidden` ; le lien de l'écran d'erreur affiche « ← Back to the feed » au
+  lieu d'un « ← Back » sans destination. Valeur par défaut de la prop :
+  `"the feed"` (au lieu de `"Feed"`).
+- `app/play/[hideId]/page.tsx` : `backLabel="the feed"`.
+- `components/PrivatePlay.tsx` : `backLabel="the public feed"`.
+
+Deux problèmes se répondaient. D'un côté, un lien icône seule : un rond de
+36 px contenant le seul caractère `←`, donc un nom accessible valant « ← » —
+annoncé « flèche vers la gauche », « lien », ou rien du tout selon le lecteur
+d'écran. Et ce n'est pas un bouton secondaire : `/play/[hideId]` est l'écran
+d'atterrissage des liens partagés, souvent le premier écran du jeu, et cette
+flèche en est la seule sortie. L'audit des contrôles icône-seule du 2026-07-30
+avait balayé les `<button>` (🔄, 🔗, 🚩, swatches de couleur) mais pas les
+`<Link>` : celui-ci lui avait échappé, alors que son jumeau de `/leaderboard`
+porte un `aria-label="Back to home"` depuis toujours.
+
+De l'autre côté, `HideGame` recevait depuis sa création une prop `backLabel`
+(`"Feed"`, passée explicitement par ses deux appelants) que le rendu n'utilisait
+nulle part — la seule alerte ESLint du dépôt
+(`@typescript-eslint/no-unused-vars`), et un item de backlog qui hésitait entre
+« l'afficher à côté de la flèche » et « la supprimer ». Les deux options avaient
+un défaut : afficher un libellé texte élargit une barre du haut déjà serrée en
+390px (flèche + pastille « Find the … » + avatar et pseudo du créateur), et
+supprimer la prop laissait la flèche muette. Troisième voie retenue : la prop
+décrit exactement la destination, elle devient donc le nom accessible. Zéro
+pixel de changement à l'écran, zéro risque de mise en page, et la prop retrouve
+une raison d'exister — un futur appelant avec un autre `backHref` a maintenant
+un endroit évident où dire où il renvoie.
+
+Le libellé est formulé pour être lu à la voix (« Back to the feed », « Back to
+the public feed » depuis une cachette privée) plutôt qu'en style bouton
+(« Feed »).
+
+Aucune migration, aucune RPC, aucune requête supplémentaire, aucune dépendance :
+coût Supabase et Vercel strictement identique. Build Next vérifié (12 routes
+générées) ; ESLint passe de 10 à 9 problèmes — l'alerte disparue est
+précisément celle de `backLabel`, les 9 erreurs restantes sont antérieures et
+inchangées.
+
+**Contrôle de sécurité quotidien : les quatre contrôles passent sans anomalie
+nouvelle**, état identique à la veille. Exécution `anon`/`authenticated` sur
+exactement les 11 RPC appelées par le client (`cleanup_old_photos`,
+`expire_hides` et `upsert_player` restent fermées) ; RLS active sur les 5
+tables, `relacl` limitées à `postgres`/`service_role` ; `active_hides` en
+`anon=r/postgres` avec 11 colonnes, aucune d'identifiant ; 15 migrations en base
+pour 15 fichiers dans `supabase/migrations/`. Le quatrième contrôle
+(identifiant en sous-chaîne d'une valeur publique) renvoie toujours `true` sur
+les 6 lignes historiques — aucune publication depuis le 2026-07-30, c'est
+l'item de nettoyage manuel du backlog, pas une régression.
+
+Le backlog de code actionnable étant retombé à vide (tout le reste est bloqué
+sur une intervention manuelle), trois nouvelles idées y ont été ajoutées : le
+`catch` silencieux de « 🔗 Share this hide » quand le presse-papier refuse,
+l'information « froid / chaud » des anneaux de tentatives portée uniquement par
+la couleur, et un bouton « Play another hide → » sur l'écran de fin.
+
 ## 2026-08-21
 
 **Accessibilité : le résultat d'une tentative est enfin annoncé aux lecteurs
