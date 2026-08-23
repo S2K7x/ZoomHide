@@ -2,6 +2,75 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-23
+
+**Fiabilité : « 🔗 Share this hide » ne laisse plus le joueur sans réponse quand
+la copie du lien échoue.**
+
+- `components/HideGame.tsx` : `linkCopied: boolean` devient
+  `shareState: "idle" | "copied" | "failed"`, plus un `shareUrl` porteur de
+  l'URL à copier. Le `catch` du presse-papier passe en `"failed"` au lieu de ne
+  rien faire ; l'état `"failed"` rend, sous les deux boutons de pied d'écran,
+  un champ en lecture seule contenant l'URL de la cachette
+  (`autoFocus` + `select()` au focus, `aria-label="Link to this hide, copy it
+  manually"`) précédé de « Couldn't copy automatically — copy the link below. ».
+- `components/HideGame.tsx` : `navigator.share` ne sort plus en silence sur
+  n'importe quelle erreur — seul `AbortError` (feuille de partage fermée
+  volontairement par le joueur) `return`e ; tout autre échec retombe sur la
+  copie presse-papier, et donc, en dernier ressort, sur le champ de repli.
+
+Le bouton « 🔗 Share this hide » est la seule façon, depuis l'écran de jeu, de
+défier un ami sur la même cachette. Son `catch` était vide, avec le commentaire
+« ignore, pas de fallback bloquant » : quand `navigator.clipboard.writeText`
+lève, le joueur clique et il ne se passe **rien du tout** — le libellé ne passe
+pas à « ✅ Link copied! », aucun message n'apparaît, et rien ne distingue
+l'échec d'un bouton mort. Ce n'est pas un cas théorique : `navigator.clipboard`
+n'existe pas hors contexte sécurisé (l'accès à `.writeText` lève alors une
+`TypeError`, déjà attrapée par le même `try`), et iOS Safari refuse l'écriture
+dès que l'appel n'est plus rattaché au geste utilisateur — ce qui est
+précisément le cas ici, puisque `shareHide` `await` d'abord `navigator.share`.
+
+Le repli retenu est le plus simple qui laisse la main au joueur : montrer l'URL.
+Un champ `readOnly` présélectionné se copie au clavier (⌘/Ctrl+C) comme à
+l'appui long sur mobile, sans dépendance ni permission. Il n'apparaît qu'après
+un échec réel, donc l'écran ne bouge pas d'un pixel dans le cas nominal. Le
+`autoFocus` fait aussi office d'annonce pour les lecteurs d'écran : le focus se
+déplace sur le champ, dont le contenu et l'`aria-label` sont lus — plus fiable
+qu'une région live montée en même temps que son contenu (même raisonnement que
+l'entrée du 2026-08-21).
+
+Le second correctif est du même ordre et vivait deux lignes plus haut : le
+`catch` de `navigator.share` faisait un `return` sec. C'est le bon comportement
+quand le joueur ferme la feuille de partage lui-même (`AbortError`), mais pas
+quand l'API échoue pour une autre raison — permission refusée, contexte non
+sécurisé, `NotAllowedError` : le joueur se retrouvait alors avec un bouton
+inerte alors que le presse-papier, lui, aurait très bien pu marcher. Le
+distinguo se fait sur `e.name`, sans dépendance ni `instanceof` (les erreurs
+`DOMException` traversent mal les environnements de test).
+
+Aucune migration, aucune RPC, aucune requête supplémentaire, aucune
+dépendance : coût Supabase et Vercel strictement identique. Build Next vérifié
+(12 routes générées) ; ESLint stable à 9 erreurs, toutes antérieures et
+inchangées.
+
+Le jumeau de ce bug reste ouvert et part au backlog : `copyLink` dans
+`app/create/page.tsx` a exactement le même `catch` vide, pour les trois boutons
+de copie de l'écran de publication — dont le lien privé, seule façon d'ouvrir
+une cachette privée sans taper le code. Traité séparément, pour tenir la règle
+d'une amélioration par jour et parce que l'état y est un `copiedKey` à trois
+valeurs qui demande un `failedKey` symétrique.
+
+**Contrôle de sécurité quotidien : les quatre contrôles passent sans anomalie
+nouvelle**, état identique à la veille. Exécution `anon`/`authenticated` sur
+exactement les 11 RPC appelées par le client (`cleanup_old_photos`,
+`expire_hides` et `upsert_player` restent fermées) ; RLS active sur les 5
+tables, `relacl` limitées à `postgres`/`service_role` ; `active_hides` en
+`anon=r/postgres` avec 11 colonnes, aucune d'identifiant ; 15 migrations en base
+pour 15 fichiers dans `supabase/migrations/` (dernière : `20260816020847`). Le
+quatrième contrôle (identifiant en sous-chaîne d'une valeur publique) renvoie
+toujours `true` sur les 6 mêmes lignes historiques — aucune publication depuis
+le 2026-07-30, c'est l'item de nettoyage manuel du backlog, pas une régression.
+
 ## 2026-08-22
 
 **Accessibilité : la flèche retour de l'écran de jeu a enfin un nom — porté par
