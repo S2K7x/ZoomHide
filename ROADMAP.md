@@ -170,15 +170,17 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   dans le `catch`/la branche `already_active` de `publish()`, et/ou étendre
   `cleanup_old_photos()` aux objets sans `hides` correspondant et vieux de plus
   de 24 h (plus robuste : couvre aussi l'onglet fermé en cours d'upload).
-- Fiabilité (nouvelle idée du 2026-08-22, priorité moyenne) : « 🔗 Share this
-  hide » (`components/HideGame.tsx`, `shareHide`) échoue en silence quand
-  `navigator.clipboard.writeText` lève — cas réel sur iOS Safari hors geste
-  utilisateur direct, et sur tout contexte non sécurisé. Le joueur clique, le
-  libellé ne passe pas à « ✅ Link copied! », et rien ne lui dit pourquoi.
-  Repli possible : message « Couldn't copy — long-press the address bar » ou
-  un champ en lecture seule contenant l'URL, sélectionnable à la main. Même
-  motif que les `catch` silencieux corrigés les 2026-08-01/17/19, dernier
-  restant sur un retour visible au joueur.
+- Fiabilité (découvert le 2026-08-23 en traitant le cas jumeau de
+  `HideGame`, priorité moyenne) : `copyLink` dans `app/create/page.tsx` garde
+  le même `catch` silencieux, pour les trois boutons de copie de l'écran de
+  publication (« 📋 Copy direct link », « 📋 Copy game link », « 📋 Copy
+  private link »). L'enjeu y est plus lourd que sur `/play` : le lien privé
+  est la seule façon d'ouvrir une cachette privée sans taper le code, et la
+  copie échoue exactement dans les mêmes conditions (iOS Safari hors geste
+  direct, contexte non sécurisé). Le repli livré le 2026-08-23 sur
+  `HideGame` s'y transpose tel quel, à ceci près que l'état est ici un
+  `copiedKey: string | null` à trois valeurs : il faudra un `failedKey`
+  symétrique pour n'afficher le champ de repli que sous le bouton concerné.
 - Accessibilité (nouvelle idée du 2026-08-22, priorité basse) : les anneaux des
   tentatives passées (`heatColor` dans `components/HideGame.tsx`) ne
   transportent leur information — froid / tiède / chaud / brûlant — que par la
@@ -208,6 +210,23 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-23** — Fiabilité : « 🔗 Share this hide » ne laisse plus le joueur
+  sans réponse quand la copie échoue (`components/HideGame.tsx`). Le `catch`
+  du `navigator.clipboard.writeText` était vide : sur iOS Safari hors geste
+  utilisateur direct, ou dans tout contexte non sécurisé, le clic ne
+  produisait strictement rien — pas de « ✅ Link copied! », pas d'erreur, rien
+  qui distingue l'échec d'un bouton mort. Le repli affiche maintenant l'URL de
+  la cachette dans un champ en lecture seule, mis au point et présélectionné
+  (« Couldn't copy automatically — copy the link below. »), donc copiable à la
+  main au clavier comme à l'appui long. Deuxième correctif dans la même
+  fonction : l'échec de `navigator.share` retombait lui aussi dans un `catch`
+  qui `return`ait — seule l'annulation volontaire (`AbortError`) sort
+  désormais en silence, tout autre échec (permission refusée, contexte non
+  sécurisé) bascule sur la copie presse-papier, puis sur le champ de repli.
+  Le `linkCopied: boolean` devient un `shareState: "idle" | "copied" |
+  "failed"`. Aucune requête, aucune migration, aucune règle de jeu touchée.
+  Contrôle de sécurité quotidien passé sans anomalie le même jour.
 
 - **2026-08-22** — Accessibilité / dette : la flèche retour de l'écran de jeu a
   enfin un nom accessible, et la prop morte `backLabel` de

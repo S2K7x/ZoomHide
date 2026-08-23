@@ -109,7 +109,10 @@ export default function HideGame({
   const [reportDone, setReportDone] = useState(false);
   const [reportError, setReportError] = useState("");
   const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
-  const [linkCopied, setLinkCopied] = useState(false);
+  // "failed" = le presse-papier a refusé : on retombe sur l'URL affichée en
+  // clair, que le joueur copie à la main (shareUrl).
+  const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
+  const [shareUrl, setShareUrl] = useState("");
 
   const reveal: Reveal | null = result?.reveal ?? detail?.reveal ?? null;
   const found = result?.success || detail?.already_found;
@@ -211,16 +214,23 @@ export default function HideGame({
       try {
         await navigator.share({ title: "Zoom Hide", text: `Can you find the ${shapeName}?`, url });
         return;
-      } catch {
-        return;
+      } catch (e) {
+        // Feuille de partage fermée volontairement : ne rien afficher, le
+        // joueur a déjà fait son choix. Tout autre échec (permission refusée,
+        // contexte non sécurisé) retombe sur la copie presse-papier.
+        if ((e as { name?: string } | null)?.name === "AbortError") return;
       }
     }
     try {
       await navigator.clipboard.writeText(url);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 1500);
+      setShareState("copied");
+      setTimeout(() => setShareState((s) => (s === "copied" ? "idle" : s)), 1500);
     } catch {
-      // ignore, pas de fallback bloquant
+      // Presse-papier indisponible ou refusé (iOS Safari hors geste direct,
+      // contexte non sécurisé) : on montre l'URL, sélectionnée, à copier à la
+      // main plutôt que de laisser le clic sans réponse.
+      setShareUrl(url);
+      setShareState("failed");
     }
   };
 
@@ -405,16 +415,34 @@ export default function HideGame({
           </>
         )}
 
-        <div className="flex items-center justify-center gap-4">
-          <button onClick={shareHide} className="text-xs text-white/40 underline">
-            {linkCopied ? "✅ Link copied!" : "🔗 Share this hide"}
-          </button>
-          <button
-            onClick={() => setShowReport(true)}
-            className="text-xs text-white/40 underline"
-          >
-            🚩 Report this hide
-          </button>
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={shareHide} className="text-xs text-white/40 underline">
+              {shareState === "copied" ? "✅ Link copied!" : "🔗 Share this hide"}
+            </button>
+            <button
+              onClick={() => setShowReport(true)}
+              className="text-xs text-white/40 underline"
+            >
+              🚩 Report this hide
+            </button>
+          </div>
+          {shareState === "failed" && (
+            <div className="w-full flex flex-col gap-1.5">
+              <p className="text-xs text-white/50 text-center">
+                Couldn&apos;t copy automatically — copy the link below.
+              </p>
+              <input
+                type="text"
+                readOnly
+                autoFocus
+                value={shareUrl}
+                aria-label="Link to this hide, copy it manually"
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-xs text-white/80"
+              />
+            </div>
+          )}
         </div>
       </div>
 
