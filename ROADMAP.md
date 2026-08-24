@@ -132,6 +132,16 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   colonnes sans identifiant, 15 migrations en base pour 15 fichiers dans le
   repo (dernière : `20260816020847`). Quatrième contrôle toujours à `true` sur
   les 6 mêmes lignes historiques.
+  **Le 2026-08-24, les quatre contrôles sont repassés sans anomalie nouvelle**,
+  état encore identique : exécution `anon`/`authenticated` sur exactement les
+  11 RPC du client (`cleanup_old_photos`, `expire_hides`, `upsert_player`
+  fermées), RLS active sur les 5 tables dont les `relacl` ne portent que
+  `postgres`/`service_role`, `active_hides` en `anon=r/postgres,
+  authenticated=r/postgres` avec ses 11 colonnes sans identifiant, 15
+  migrations en base pour 15 fichiers dans le repo (dernière :
+  `20260816020847`). Quatrième contrôle : 6 lignes sur 6 encore à `true`,
+  dernière publication toujours le 2026-07-30 — rien de neuf, c'est l'item de
+  nettoyage manuel ci-dessus.
 - Sécurité (résiduel, priorité basse) : les `player_id` ne sont plus exposés
   (2026-08-14), donc l'usurpation d'identité demande maintenant de deviner un
   `crypto.randomUUID()`. Reste que les RPC continuent d'accorder des droits
@@ -170,17 +180,19 @@ Règle : une seule amélioration livrée par jour, petite et testée.
   dans le `catch`/la branche `already_active` de `publish()`, et/ou étendre
   `cleanup_old_photos()` aux objets sans `hides` correspondant et vieux de plus
   de 24 h (plus robuste : couvre aussi l'onglet fermé en cours d'upload).
-- Fiabilité (découvert le 2026-08-23 en traitant le cas jumeau de
-  `HideGame`, priorité moyenne) : `copyLink` dans `app/create/page.tsx` garde
-  le même `catch` silencieux, pour les trois boutons de copie de l'écran de
-  publication (« 📋 Copy direct link », « 📋 Copy game link », « 📋 Copy
-  private link »). L'enjeu y est plus lourd que sur `/play` : le lien privé
-  est la seule façon d'ouvrir une cachette privée sans taper le code, et la
-  copie échoue exactement dans les mêmes conditions (iOS Safari hors geste
-  direct, contexte non sécurisé). Le repli livré le 2026-08-23 sur
-  `HideGame` s'y transpose tel quel, à ceci près que l'état est ici un
-  `copiedKey: string | null` à trois valeurs : il faudra un `failedKey`
-  symétrique pour n'afficher le champ de repli que sous le bouton concerné.
+- Dette / outillage (découvert le 2026-08-24, priorité basse) : `npx eslint app
+  components lib` remonte 9 erreurs, toutes préexistantes et toutes issues des
+  règles React Compiler du plugin `react-hooks` (8× `set-state-in-effect`, 1×
+  « Cannot call impure function during render »), réparties sur
+  `app/create/page.tsx`, `app/leaderboard/page.tsx`, `app/play/page.tsx`,
+  `components/HideGame.tsx`, `components/PrivatePlay.tsx`. Ce ne sont pas des
+  régressions du jour (comptage identique sur l'arbre propre) et `npm run
+  build` passe : ces règles sont devenues bloquantes avec une version plus
+  récente du plugin, tirée par `npm ci`. Deux cas distincts : les
+  `setState` en début d'effet (hydratation `localStorage` : `getPlayerName()`,
+  `getPlayerId()`) et les appels impurs pendant le rendu (`Date.now()` dans le
+  corps du composant). À traiter un par un, un fichier par jour — surtout pas
+  en un seul passage, le risque de régression sur l'hydratation est réel.
 - Accessibilité (nouvelle idée du 2026-08-22, priorité basse) : les anneaux des
   tentatives passées (`heatColor` dans `components/HideGame.tsx`) ne
   transportent leur information — froid / tiède / chaud / brûlant — que par la
@@ -210,6 +222,22 @@ Règle : une seule amélioration livrée par jour, petite et testée.
 _(rien pour l'instant)_
 
 ## Fait
+
+- **2026-08-24** — Fiabilité : les trois boutons de copie de `/create` ne
+  laissent plus le créateur sans réponse quand la copie échoue
+  (`app/create/page.tsx`). Cas jumeau du correctif du 2026-08-23 sur
+  `HideGame`, repéré le même jour : `copyLink` gardait le `catch` vide
+  (« ignore, pas de fallback bloquant ») pour « 📋 Copy direct link (no code
+  shown) », « 📋 Copy game link » et « 📋 Copy private link ». L'enjeu y est
+  plus lourd que sur `/play` : le lien privé est la seule façon d'ouvrir une
+  cachette privée sans taper le code, et sur iOS Safari hors geste direct ou
+  en contexte non sécurisé, le clic ne produisait rien du tout. `copiedKey`
+  gagne un `failedKey`/`failedUrl` symétriques, et un helper `copyFallback(key,
+  label)` rend le champ `readOnly` présélectionné sous le seul bouton concerné
+  (« Couldn't copy automatically — copy the link below. »), avec un
+  `aria-label` propre à chaque lien. Une copie réussie efface le repli. Aucune
+  requête, aucune migration, aucune règle de jeu touchée. Contrôle de sécurité
+  quotidien passé sans anomalie le même jour.
 
 - **2026-08-23** — Fiabilité : « 🔗 Share this hide » ne laisse plus le joueur
   sans réponse quand la copie échoue (`components/HideGame.tsx`). Le `catch`

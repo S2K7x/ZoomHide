@@ -48,6 +48,10 @@ export default function CreatePage() {
   const [publishedId, setPublishedId] = useState("");
   const [publishedCode, setPublishedCode] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Symétrique de copiedKey : le presse-papier a refusé pour CE bouton-là, on
+  // retombe sur l'URL affichée en clair (failedUrl), copiable à la main.
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const [failedUrl, setFailedUrl] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -55,12 +59,33 @@ export default function CreatePage() {
   const copyLink = async (key: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      setFailedKey(null);
       setCopiedKey(key);
       setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
     } catch {
-      // ignore, pas de fallback bloquant
+      setFailedUrl(text);
+      setFailedKey(key);
     }
   };
+
+  // Champ de repli, rendu sous le seul bouton dont la copie a échoué.
+  const copyFallback = (key: string, label: string) =>
+    failedKey === key ? (
+      <div className="flex flex-col gap-1.5 text-left">
+        <p className="text-xs text-white/50 text-center">
+          Couldn&apos;t copy automatically — copy the link below.
+        </p>
+        <input
+          type="text"
+          readOnly
+          autoFocus
+          value={failedUrl}
+          aria-label={label}
+          onFocus={(e) => e.currentTarget.select()}
+          className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-xs text-white/80"
+        />
+      </div>
+    ) : null;
 
   // Toujours pleinement opaque : le sticker doit rester visible à l'oeil nu,
   // seule sa couleur/forme peut le camoufler — pas sa transparence.
@@ -292,6 +317,7 @@ export default function CreatePage() {
           >
             {copiedKey === "direct" ? "✅ Copied!" : "📋 Copy direct link (no code shown)"}
           </button>
+          {copyFallback("direct", "Direct link to your private hide, copy it manually")}
           <Link href={`/play/private/${publishedId}`} className="text-violet-300 underline">
             Open the hide
           </Link>
@@ -311,6 +337,7 @@ export default function CreatePage() {
         >
           {copiedKey === "game" ? "✅ Copied!" : "📋 Copy game link"}
         </button>
+        {copyFallback("game", "Link to the hide feed, copy it manually")}
         <Link href="/play" className="text-violet-300 underline">
           See the hide feed
         </Link>
@@ -362,6 +389,7 @@ export default function CreatePage() {
             >
               {copiedKey === "private" ? "✅ Copied!" : "📋 Copy private link"}
             </button>
+            {copyFallback("private", "Private link to your hide, copy it manually")}
           </div>
         )}
         <button

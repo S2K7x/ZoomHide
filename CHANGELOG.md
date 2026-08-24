@@ -2,6 +2,49 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-08-24
+
+**Fiabilité : les trois boutons de copie de l'écran de publication ne laissent
+plus le créateur sans réponse quand la copie échoue.**
+
+- `app/create/page.tsx` : `copyLink` ne mange plus l'échec du presse-papier.
+  Deux états symétriques de `copiedKey` apparaissent — `failedKey: string |
+  null` (quel bouton a échoué) et `failedUrl` (l'URL à recopier) — et un
+  helper `copyFallback(key, label)` rend, sous le seul bouton concerné, un
+  champ `readOnly` contenant l'URL (`autoFocus` + `select()` au focus),
+  précédé de « Couldn't copy automatically — copy the link below. ».
+- Les trois boutons sont couverts : « 📋 Copy direct link (no code shown) » et
+  « 📋 Copy private link » (lien privé) et « 📋 Copy game link » (feed
+  public), chacun avec son propre `aria-label` (« Direct link to your private
+  hide, copy it manually », etc.). Une copie qui réussit ensuite efface le
+  repli (`setFailedKey(null)`).
+
+C'est le cas jumeau du correctif du 2026-08-23 sur `components/HideGame.tsx`,
+repéré le même jour et noté au backlog. L'enjeu est plus lourd ici que sur
+`/play` : le lien privé est la **seule** façon d'ouvrir une cachette privée
+sans taper le code à six chiffres, et il n'est affiché nulle part ailleurs sur
+cet écran. Les conditions d'échec sont identiques — `navigator.clipboard`
+n'existe pas hors contexte sécurisé, et iOS Safari refuse l'écriture dès que
+l'appel s'éloigne du geste utilisateur — et le résultat était le même : le
+libellé ne passait pas à « ✅ Copied! », rien ne s'affichait, rien ne
+distinguait l'échec d'un bouton mort. Un créateur pouvait ainsi repartir en
+croyant avoir son lien privé en presse-papier.
+
+Le `failedKey` (plutôt qu'un simple booléen) est ce qui rend le repli
+transposable ici : l'écran « cachette active » affiche potentiellement le
+bouton privé au milieu d'autres actions, et faire apparaître le champ sous un
+bouton qui n'a pas échoué désignerait le mauvais lien. Aucune requête
+Supabase, aucune migration, aucune règle de gameplay touchée ; le rendu
+nominal ne bouge pas d'un pixel, le champ n'existe qu'après un échec réel.
+
+**Contrôles de sécurité quotidiens** : les quatre passés sans anomalie
+nouvelle, état identique à la veille (droits d'exécution `anon` sur exactement
+les 11 RPC du client, RLS active et `relacl` sans grant `anon` sur les
+5 tables, `active_hides` en lecture seule et sans colonne d'identifiant,
+15 migrations en base pour 15 fichiers dans le repo). Le quatrième contrôle
+reste à `true` sur les 6 mêmes lignes historiques (dernière publication le
+2026-07-30) — item de nettoyage manuel connu, pas une régression.
+
 ## 2026-08-23
 
 **Fiabilité : « 🔗 Share this hide » ne laisse plus le joueur sans réponse quand
