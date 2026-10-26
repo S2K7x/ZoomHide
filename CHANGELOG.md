@@ -2,6 +2,23 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-10-26
+
+**Refonte visuelle « playground » : fond crème, typo display grasse, aplats
+colorés et mascottes kawaii (inspiration Dribbble « Tebak Gambar »).**
+
+- `app/globals.css` : nouvelle palette (crème, encre, teal, orange, rose, jaune,
+  ciel, violet, vert), boutons en pilules noires, chips, contrôle segmenté,
+  champs `zh-input`, animations `zh-float` / `zh-twinkle` / `zh-pop` (coupées
+  en `prefers-reduced-motion`).
+- `app/layout.tsx` : polices Bricolage Grotesque (titres) et Plus Jakarta Sans
+  (texte) via `next/font`.
+- Nouveaux composants : `Mascot` (SVG, couleur/forme/humeur), `Icons` (icônes
+  trait), `PlayerChip`.
+- Barre de navigation en pilule sombre, onglet actif en pilule teal.
+- Accueil, feed, jeu, classement, création, code privé et image story
+  restylés. Aucune logique de jeu modifiée.
+
 ## 2026-08-24
 
 **Fiabilité : les trois boutons de copie de l'écran de publication ne laissent

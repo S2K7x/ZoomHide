@@ -36,7 +36,7 @@ export default function Avatar({
         height: size,
         fontSize: size * 0.42,
         background: `linear-gradient(145deg, ${a}, ${b})`,
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 10px -4px rgba(0,0,0,0.6)",
+        boxShadow: "0 0 0 2.5px #fff, 0 6px 12px -6px rgba(0,0,0,0.45)",
       }}
     >
       {initial}

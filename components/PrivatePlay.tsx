@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import HideGame from "@/components/HideGame";
 import GameSkeleton from "@/components/GameSkeleton";
+import Mascot, { Sparkle } from "@/components/Mascot";
+import { BackIcon } from "@/components/Icons";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -71,39 +73,49 @@ export default function PrivatePlay({ initialToken }: { initialToken?: string })
   };
 
   return (
-    <div className="px-6 pt-16 flex flex-col gap-6">
-      <header className="text-center">
-        <h1 className="text-3xl font-black">🔒 Private hide</h1>
-        <p className="mt-2 text-white/70 text-sm">
-          Got a 6-digit code from a friend? Enter it to unlock their hide.
-        </p>
-      </header>
+    <div className="px-5 pt-6 flex flex-col gap-5">
+      <div className="flex items-start justify-between">
+        <h1 className="zh-display text-[2.8rem]">
+          Private
+          <br />
+          Hide
+        </h1>
+        <Link href="/play" aria-label="Back to public feed" className="zh-icon-btn">
+          <BackIcon size={20} />
+        </Link>
+      </div>
 
-      <input
-        inputMode="numeric"
-        pattern="[0-9]*"
-        maxLength={6}
-        value={code}
-        autoFocus
-        onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-        onKeyDown={(e) => e.key === "Enter" && go()}
-        placeholder="000000"
-        className="w-full text-center tracking-[0.5em] text-3xl font-black rounded-2xl bg-white/10 border border-white/15 py-5"
-      />
-
-      {error && <p className="text-center text-red-300 text-sm">🔒 {error}</p>}
-
-      <button
-        onClick={go}
-        disabled={code.length !== 6 || resolving}
-        className="zh-btn zh-btn-primary py-4"
-      >
-        {resolving ? "Unlocking…" : "Unlock hide 🔓"}
-      </button>
-
-      <Link href="/play" className="text-center text-violet-300 underline text-sm">
-        ← Back to public feed
-      </Link>
+      <div className="zh-tile bg-purple text-white p-5 pb-6 flex flex-col gap-4">
+        <Sparkle size={16} className="zh-twinkle absolute top-5 right-6 text-yellow" />
+        <div className="flex items-center gap-3">
+          <Mascot shape="cat" mood="wow" color="var(--yellow)" size={72} className="shrink-0" />
+          <p className="text-sm font-semibold text-white/90">
+            Got a 6-digit code from a friend? Enter it to unlock their hide.
+          </p>
+        </div>
+        <input
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={6}
+          value={code}
+          autoFocus
+          aria-label="6-digit code"
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          onKeyDown={(e) => e.key === "Enter" && go()}
+          placeholder="000000"
+          className="w-full text-center tracking-[0.45em] zh-display text-4xl rounded-[1.6rem] bg-white text-ink placeholder:text-ink/20 py-5 focus-visible:outline-none focus:outline-none focus:ring-4 focus:ring-yellow"
+        />
+        {error && (
+          <p className="text-center text-sm font-bold rounded-full bg-white/15 py-2">🔒 {error}</p>
+        )}
+        <button
+          onClick={go}
+          disabled={code.length !== 6 || resolving}
+          className="zh-btn zh-btn-primary py-4 text-base"
+        >
+          {resolving ? "Unlocking…" : "Unlock hide 🔓"}
+        </button>
+      </div>
     </div>
   );
 }

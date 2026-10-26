@@ -15,7 +15,7 @@ export function GET() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(180deg, #ffe07a 0%, #f6b81e 100%)",
+          background: "#ffd23f",
           borderRadius: 112,
         }}
       >
@@ -29,7 +29,7 @@ export function GET() {
               width: 190,
               height: 190,
               borderRadius: "50%",
-              border: "26px solid #241800",
+              border: "26px solid #161616",
             }}
           />
           <div
@@ -41,7 +41,7 @@ export function GET() {
               width: 96,
               height: 30,
               borderRadius: 15,
-              background: "#241800",
+              background: "#161616",
               transform: "rotate(45deg)",
               transformOrigin: "right center",
             }}

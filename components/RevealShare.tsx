@@ -48,21 +48,47 @@ export default function RevealShare(props: Props) {
       canvas.height = H;
       const ctx = canvas.getContext("2d")!;
 
-      // fond dégradé
-      const bg = ctx.createLinearGradient(0, 0, 0, H);
-      bg.addColorStop(0, "#12081f");
-      bg.addColorStop(1, "#2a1245");
-      ctx.fillStyle = bg;
+      // Polices de l'app (next/font) : on attend qu'elles soient prêtes pour
+      // que le canvas ne retombe pas sur la police système.
+      await document.fonts?.ready;
+      if (cancelled) return;
+      const css = getComputedStyle(document.documentElement);
+      const display = css.getPropertyValue("--font-bricolage").trim() || "system-ui";
+      const sans = css.getPropertyValue("--font-jakarta").trim() || "system-ui";
+
+      // fond crème + gros aplats colorés, comme l'app
+      ctx.fillStyle = "#f3efe4";
       ctx.fillRect(0, 0, W, H);
+      const blob = (x: number, y: number, r: number, c: string) => {
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      blob(980, 140, 260, "#ffd23f");
+      blob(60, 1720, 300, "#77c4f1");
+      blob(1040, 1560, 150, "#ff5f9e");
 
       // photo centrée, largeur ~92%
       const pw = W * 0.92;
       const ph = pw * (photo.naturalHeight / photo.naturalWidth);
       const px = (W - pw) / 2;
       const py = Math.max(300, (H - ph) / 2 - 80);
+      // photo en carte arrondie, liseré blanc
+      const rr = 56;
       ctx.save();
-      ctx.shadowColor = "rgba(0,0,0,0.6)";
-      ctx.shadowBlur = 40;
+      ctx.shadowColor = "rgba(0,0,0,0.25)";
+      ctx.shadowBlur = 50;
+      ctx.shadowOffsetY = 20;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.roundRect(px - 14, py - 14, pw + 28, ph + 28, rr + 14);
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(px, py, pw, ph, rr);
+      ctx.clip();
       ctx.drawImage(photo, px, py, pw, ph);
       ctx.restore();
 
@@ -74,8 +100,8 @@ export default function RevealShare(props: Props) {
       ctx.translate(sx, sy);
       // halo
       const glow = ctx.createRadialGradient(0, 0, sw * 0.3, 0, 0, sw * 1.4);
-      glow.addColorStop(0, "rgba(255,220,80,0.55)");
-      glow.addColorStop(1, "rgba(255,220,80,0)");
+      glow.addColorStop(0, "rgba(255,210,63,0.6)");
+      glow.addColorStop(1, "rgba(255,210,63,0)");
       ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(0, 0, sw * 1.4, 0, Math.PI * 2);
@@ -84,25 +110,32 @@ export default function RevealShare(props: Props) {
       ctx.drawImage(sticker, -sw / 2, -sw / 2, sw, sw);
       ctx.restore();
       // anneau
-      ctx.strokeStyle = "#ffd84f";
-      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#ffd23f";
+      ctx.lineWidth = 8;
       ctx.beginPath();
       ctx.arc(sx, sy, sw * 0.9, 0, Math.PI * 2);
       ctx.stroke();
 
       // textes
       ctx.textAlign = "center";
+      ctx.fillStyle = "#161616";
+      ctx.font = `800 96px ${display}`;
+      ctx.fillText("Zoom Hide", W / 2, 190);
+      // titre dans une pilule noire
+      ctx.font = `800 76px ${display}`;
+      const hw = ctx.measureText(props.headline).width + 110;
+      const hy = py + ph + 70;
+      ctx.fillStyle = "#161616";
+      ctx.beginPath();
+      ctx.roundRect((W - hw) / 2, hy, hw, 130, 65);
+      ctx.fill();
       ctx.fillStyle = "#fff";
-      ctx.font = "bold 88px system-ui, sans-serif";
-      ctx.fillText("🔎 Zoom Hide", W / 2, 160);
-      ctx.font = "bold 72px system-ui, sans-serif";
-      ctx.fillStyle = "#ffd84f";
-      ctx.fillText(props.headline, W / 2, py + ph + 130);
-      ctx.font = "44px system-ui, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      ctx.fillText(props.subline, W / 2, py + ph + 200);
-      ctx.font = "40px system-ui, sans-serif";
-      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.fillText(props.headline, W / 2, hy + 92);
+      ctx.font = `600 44px ${sans}`;
+      ctx.fillStyle = "rgba(22,22,22,0.8)";
+      ctx.fillText(props.subline, W / 2, hy + 210);
+      ctx.font = `700 40px ${sans}`;
+      ctx.fillStyle = "#0f9d84";
       ctx.fillText("Come play too — link in bio", W / 2, H - 90);
 
       setReady(true);
@@ -138,7 +171,7 @@ export default function RevealShare(props: Props) {
   return (
     <div className="flex flex-col items-center gap-3">
       <div
-        className="relative w-40 overflow-hidden rounded-xl border border-white/20"
+        className="relative w-40 overflow-hidden rounded-2xl ring-4 ring-white shadow-lg"
         style={{ aspectRatio: "9 / 16" }}
       >
         <canvas
@@ -158,7 +191,7 @@ export default function RevealShare(props: Props) {
       {ready && (
         <button
           onClick={share}
-          className="zh-btn zh-btn-primary !rounded-full px-6 py-3"
+          className="zh-btn zh-btn-primary px-6 py-3.5"
         >
           Share to story 📤
         </button>

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { getPlayerId } from "@/lib/player";
 import Avatar from "@/components/Avatar";
+import Mascot from "@/components/Mascot";
+import { BackIcon } from "@/components/Icons";
 
 type Row = {
   name: string;
@@ -18,6 +20,12 @@ type Row = {
 };
 
 type MyRank = { rank: number; score: number } | null;
+
+const ordinal = (n: number) => {
+  const t = n % 100;
+  if (t >= 11 && t <= 13) return `${n}th`;
+  return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+};
 
 export default function LeaderboardPage() {
   const [board, setBoard] = useState<"hiders" | "seekers">("hiders");
@@ -74,37 +82,27 @@ export default function LeaderboardPage() {
   const rest = rows.slice(3);
   // ordre visuel du podium : 2 · 1 · 3
   const podium = [top3[1], top3[0], top3[2]];
-  const heights = ["h-20", "h-28", "h-16"];
-  const blockGrad = [
-    "from-slate-300/80 to-slate-500/80",
-    "from-amber-300 to-amber-500",
-    "from-orange-300/80 to-orange-600/80",
-  ];
+  const heights = ["h-28", "h-36", "h-24"];
+  const blockColor = ["bg-sky", "bg-yellow", "bg-pink"];
 
   return (
-    <div className="px-4 pt-8 flex flex-col gap-5">
-      <div className="flex items-center justify-center relative">
-        <Link
-          href="/"
-          aria-label="Back to home"
-          className="absolute left-0 grid place-items-center w-10 h-10 rounded-full zh-card zh-card-interactive text-lg"
-        >
-          ←
+    <div className="px-4 pt-6 flex flex-col gap-5">
+      <div className="flex items-start justify-between">
+        <h1 className="zh-display text-[2.8rem]">
+          Leader
+          <br />
+          board
+        </h1>
+        <Link href="/" aria-label="Back to home" className="zh-icon-btn">
+          <BackIcon size={20} />
         </Link>
-        <h1 className="text-xl font-black">Leaderboard</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <button
-          onClick={() => setBoard("hiders")}
-          className={`zh-btn py-3 ${board === "hiders" ? "zh-btn-violet" : "zh-btn-ghost"}`}
-        >
+      <div className="zh-segment text-sm">
+        <button onClick={() => setBoard("hiders")} aria-pressed={board === "hiders"}>
           🫥 Top Hiders
         </button>
-        <button
-          onClick={() => setBoard("seekers")}
-          className={`zh-btn py-3 ${board === "seekers" ? "zh-btn-primary" : "zh-btn-ghost"}`}
-        >
+        <button onClick={() => setBoard("seekers")} aria-pressed={board === "seekers"}>
           🔎 Top Seekers
         </button>
       </div>
@@ -120,13 +118,13 @@ export default function LeaderboardPage() {
             key={k}
             onClick={() => setPeriod(k)}
             aria-pressed={period === k}
-            className={`zh-chip ${period === k ? "zh-chip-on-soft" : ""}`}
+            className={`zh-chip ${period === k ? "zh-chip-on" : ""}`}
           >
             {label}
           </button>
         ))}
         {period === "week" && (
-          <span className="ml-auto text-white/35">resets Monday</span>
+          <span className="ml-auto text-[var(--muted)] font-medium">resets Monday</span>
         )}
       </div>
 
@@ -134,77 +132,70 @@ export default function LeaderboardPage() {
         <div aria-label="Loading leaderboard">
           {/* Podium skeleton */}
           <div className="grid grid-cols-3 items-end gap-2 pt-2">
-            {["h-20", "h-28", "h-16"].map((h, i) => (
+            {["h-28", "h-36", "h-24"].map((h, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
                 <div className="w-[52px] h-[52px] rounded-full zh-skeleton" />
                 <div className="h-2.5 w-14 rounded zh-skeleton" />
-                <div className="h-2.5 w-6 rounded zh-skeleton" />
-                <div className={`w-full ${h} rounded-t-2xl zh-skeleton`} />
+                <div className={`w-full ${h} rounded-[1.6rem] zh-skeleton`} />
               </div>
             ))}
           </div>
 
           {/* List skeleton */}
-          <ol className="flex flex-col gap-2 mt-2">
+          <ol className="flex flex-col gap-2 mt-4 rounded-[2rem] bg-ink p-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-white/10 bg-white/5"
-              >
-                <div className="w-6 h-2.5 rounded zh-skeleton" />
-                <div className="w-[38px] h-[38px] rounded-full zh-skeleton shrink-0" />
+              <li key={i} className="flex items-center gap-3 rounded-full bg-white/10 px-3 py-2.5">
+                <div className="w-[38px] h-[38px] rounded-full bg-white/15 shrink-0" />
                 <div className="flex-1 flex flex-col gap-1.5 py-0.5">
-                  <div className="h-2.5 w-2/5 rounded zh-skeleton" />
-                  <div className="h-2 w-1/3 rounded zh-skeleton" />
+                  <div className="h-2.5 w-2/5 rounded bg-white/15" />
+                  <div className="h-2 w-1/3 rounded bg-white/10" />
                 </div>
-                <div className="h-2.5 w-6 rounded zh-skeleton" />
               </li>
             ))}
           </ol>
         </div>
       ) : error ? (
-        <div className="zh-card p-8 text-center text-white/60 flex flex-col gap-2">
-          <p>⚠️ Couldn&apos;t load the leaderboard. Check your connection.</p>
-          <button onClick={fetchBoard} className="text-amber-300 font-semibold underline">
+        <div className="zh-card p-8 text-center flex flex-col items-center gap-3">
+          <Mascot shape="bean" mood="sad" color="var(--sky)" size={96} />
+          <p className="text-[var(--muted)]">Couldn&apos;t load the leaderboard. Check your connection.</p>
+          <button onClick={fetchBoard} className="zh-btn zh-btn-primary px-5 py-2.5 text-sm">
             Try again
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="zh-card p-8 text-center text-white/60">
-          No one on the board yet. Go play!
+        <div className="zh-card p-8 text-center flex flex-col items-center gap-3">
+          <Mascot shape="cat" mood="wow" color="var(--yellow)" size={96} />
+          <p className="text-[var(--muted)]">No one on the board yet. Go play!</p>
+          <Link href="/play" className="zh-btn zh-btn-primary px-5 py-2.5 text-sm">
+            Find a hide
+          </Link>
         </div>
       ) : (
         <>
           {/* Podium */}
-          <div className="grid grid-cols-3 items-end gap-2 pt-2">
+          <div className="grid grid-cols-3 items-end gap-2 pt-4">
             {podium.map((r, i) => {
               if (!r) return <div key={i} />;
               const rank = i === 0 ? 2 : i === 1 ? 1 : 3;
               return (
-                <div key={i} className="flex flex-col items-center gap-2">
+                <div key={i} className="flex flex-col items-center gap-1.5">
+                  <p className="zh-display text-lg">{ordinal(rank)}</p>
                   <div className="relative">
                     {rank === 1 && (
-                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl">👑</span>
+                      <span className="absolute -top-4 -right-3 rotate-[20deg] text-2xl">👑</span>
                     )}
-                    <Avatar
-                      name={r.name}
-                      size={rank === 1 ? 64 : 52}
-                      className={rank === 1 ? "ring-2 ring-amber-300" : ""}
-                    />
+                    <Avatar name={r.name} size={rank === 1 ? 64 : 52} />
                   </div>
-                  <p className="text-xs font-semibold text-center truncate max-w-[6rem]">
+                  <p className="text-xs font-bold text-center truncate max-w-[6rem]">
                     {r.name}
-                    {r.is_me && <span className="text-amber-300"> (you)</span>}
+                    {r.is_me && <span className="text-teal"> (you)</span>}
                   </p>
-                  <p className="text-[13px] font-black text-amber-300">{r.score}</p>
                   <div
-                    className={`w-full ${heights[i]} rounded-t-2xl bg-gradient-to-b ${blockGrad[i]} grid place-items-center text-2xl font-black text-black/80 ${
-                      rank === 1
-                        ? "shadow-[0_-14px_36px_-18px_rgba(246,184,30,0.9),inset_0_1px_0_rgba(255,255,255,0.5)]"
-                        : "shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
-                    }`}
+                    className={`w-full ${heights[i]} rounded-[1.6rem] ${blockColor[i]} flex justify-center pt-3 shadow-[0_14px_26px_-18px_rgba(0,0,0,0.6)]`}
                   >
-                    {rank}
+                    <span className="h-fit rounded-full bg-white px-2.5 py-1 text-xs font-extrabold">
+                      {r.score} pts
+                    </span>
                   </div>
                 </div>
               );
@@ -212,35 +203,36 @@ export default function LeaderboardPage() {
           </div>
 
           {/* Reste du classement */}
-          <ol className="flex flex-col gap-2">
-            {rest.map((r, i) => (
-              <li
-                key={i}
-                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 border transition-colors ${
-                  r.is_me
-                    ? "bg-amber-400/15 border-amber-400/40 shadow-[0_10px_26px_-18px_rgba(246,184,30,0.9)]"
-                    : "bg-white/5 border-white/10"
-                }`}
-              >
-                <span className="w-6 text-center font-black text-white/50">{i + 4}</span>
-                <Avatar name={r.name} size={38} />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">
-                    {r.name}
-                    {r.is_me && <span className="text-amber-300 text-xs"> (you)</span>}
-                  </p>
-                  <p className="text-xs text-white/45">{sub(r)}</p>
-                </div>
-                <b className="text-amber-300">{r.score}</b>
-              </li>
-            ))}
-          </ol>
+          {rest.length > 0 && (
+            <div className="rounded-[2rem] bg-ink p-3 pt-5">
+              <h2 className="zh-display text-white text-2xl px-2 mb-3">Other ranks</h2>
+              <ol className="flex flex-col gap-2">
+                {rest.map((r, i) => (
+                  <li
+                    key={i}
+                    className={`flex items-center gap-3 rounded-full pl-2 pr-5 py-2 ${
+                      r.is_me ? "bg-sky" : "bg-white"
+                    }`}
+                  >
+                    <Avatar name={r.name} size={40} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold text-ink/55 leading-tight">
+                        {ordinal(i + 4)} · {sub(r)}
+                      </p>
+                      <p className="font-bold truncate">{r.is_me ? `${r.name} (you)` : r.name}</p>
+                    </div>
+                    <b className="zh-display text-xl">{r.score}</b>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
 
           {myRank && (
-            <div className="flex items-center gap-3 rounded-2xl px-3 py-2.5 border border-dashed border-amber-400/40 bg-amber-400/10">
-              <span className="w-6 text-center font-black text-amber-300">#{myRank.rank}</span>
-              <span className="flex-1 text-sm font-semibold text-amber-200">You</span>
-              <b className="text-amber-300">{myRank.score}</b>
+            <div className="flex items-center gap-3 rounded-full pl-4 pr-5 py-3 bg-sky shadow-[0_14px_26px_-18px_rgba(0,0,0,0.6)]">
+              <span className="zh-display text-lg">#{myRank.rank}</span>
+              <span className="flex-1 text-sm font-bold">You</span>
+              <b className="zh-display text-xl">{myRank.score}</b>
             </div>
           )}
         </>

@@ -200,7 +200,7 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
           aria-label="Reset zoom"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={resetZoom}
-          className="zh-btn absolute bottom-3 right-3 z-10 px-3 py-1.5 text-xs zh-btn-ghost"
+          className="zh-btn zh-btn-ghost absolute bottom-3 right-3 z-10 px-3.5 py-2 text-xs"
         >
           ↺ Reset zoom
         </button>
