@@ -27,6 +27,9 @@ type Detail = {
   attempts_left: number;
   already_found: boolean;
   reveal: Reveal | null;
+  // Absents tant que la migration 016 n'est pas appliquée.
+  clues?: string[];
+  clues_total?: number;
   error?: string;
 };
 
@@ -35,6 +38,7 @@ type AttemptResult = {
   distance?: number;
   attempts_left?: number;
   reveal?: Reveal | null;
+  clues?: string[];
   error?: string;
 };
 
@@ -112,6 +116,8 @@ export default function HideGame({
   const [reportError, setReportError] = useState("");
   const [pastAttempts, setPastAttempts] = useState<Tap[]>([]);
   // Dernier raté : palier chaud/froid + tendance vs le tap précédent.
+  // Indices débloqués par le serveur (jamais plus que le nombre de ratés).
+  const [clues, setClues] = useState<string[]>([]);
   const [miss, setMiss] = useState<{ level: number; trend: string | null } | null>(null);
   // "failed" = le presse-papier a refusé : on retombe sur l'URL affichée en
   // clair, que le joueur copie à la main (shareUrl).
@@ -153,6 +159,7 @@ export default function HideGame({
       return;
     }
     setDetail(d);
+    setClues(d.clues ?? []);
     setPastAttempts(loadHistory(hideId).taps);
     setMiss(null);
     startTime.current = Date.now();
@@ -195,6 +202,7 @@ export default function HideGame({
     }
     setResult(r);
     setTimeMs(elapsed);
+    if (r.clues) setClues(r.clues);
     if (r.success) {
       saveHistory(hideId, { taps: pastAttempts, found: true, timeMs: elapsed });
       vibrate([15, 60, 15]);
@@ -202,7 +210,10 @@ export default function HideGame({
       const d = r.distance ?? 100;
       const level = heatLevel(d);
       const trend = heatTrend(d, pastAttempts.at(-1)?.distance);
-      setFeedback(`${HEAT[level].label}${trend ? ` ${trend}.` : ""}`);
+      // Le nouvel indice est lu par les lecteurs d'écran via `feedback`
+      // (région live) ; visuellement il apparaît dans la carte des indices.
+      const newClue = r.clues && r.clues.length > clues.length ? r.clues[r.clues.length - 1] : null;
+      setFeedback(`${HEAT[level].label}${trend ? ` ${trend}.` : ""}${newClue ? ` New clue: ${newClue}` : ""}`);
       setMiss({ level, trend });
       const taps = [...pastAttempts, { x: marker.x, y: marker.y, distance: d }];
       setPastAttempts(taps);
@@ -368,6 +379,22 @@ export default function HideGame({
       </div>
 
       <div className="px-4 flex flex-col gap-3 pb-6">
+        {!!detail.clues_total && (
+          <div className="zh-card p-4 flex flex-col gap-2">
+            <p className="zh-display text-lg">Clues</p>
+            {Array.from({ length: detail.clues_total }, (_, i) =>
+              clues[i] ? (
+                <p key={i} className={`text-sm font-semibold rounded-2xl bg-yellow px-3 py-2 ${i === clues.length - 1 && miss ? "zh-pop" : ""}`}>
+                  💡 {clues[i]}
+                </p>
+              ) : (
+                <p key={i} className="text-sm font-medium text-[var(--muted)] rounded-2xl bg-ink/5 px-3 py-2">
+                  🔒 Clue {i + 1} unlocks after {i === clues.length ? "your next miss" : `${i + 1} misses`}
+                </p>
+              )
+            )}
+          </div>
+        )}
         <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {liveMessage}
         </p>

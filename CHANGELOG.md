@@ -2,6 +2,21 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-10-26 (3)
+
+**Jeu : indices progressifs écrits par le cacheur.**
+
+- `supabase/migrations/016_progressive_clues.sql` (à appliquer dans le SQL
+  Editor) : colonne `hides.clues text[]` (3 max), helper interne
+  `unlocked_clues()` (non exposé), `create_hide` accepte `p_clues` (défaut
+  vide, l'ancien appel à 11 arguments reste valide), `get_hide_detail` et
+  `try_attempt` renvoient `clues` (seulement les débloqués : 1 par raté, tous
+  pour le créateur ou un joueur qui a trouvé) et `clues_total`.
+- `app/create/page.tsx` : 3 champs « Clues (optional) », 80 caractères max ;
+  `p_clues` n'est envoyé que s'il y a au moins un indice.
+- `components/HideGame.tsx` : carte « Clues » (💡 débloqués, 🔒 à venir) ;
+  le nouvel indice est annoncé aux lecteurs d'écran.
+
 ## 2026-10-26 (2)
 
 **Jeu : retour chaud/froid plus lisible et résultat partageable sans spoiler
