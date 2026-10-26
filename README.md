@@ -65,6 +65,9 @@ Jobs pg_cron installés :
 
 - 1 cachette active max par joueur, expire après **7 jours**
 - **3 essais par jour** et par cachette (reset quotidien)
+- **Indices progressifs** (optionnels) : le cacheur écrit jusqu'à 3 indices ;
+  le n-ième se débloque au n-ième raté du joueur (filtré côté serveur, migration
+  `016_progressive_clues.sql`)
 - Personne ne trouve en 7 jours → badge **Cachette Parfaite 💎** (+500 pts)
 - Score cacheur : 10 pts par tentative ratée provoquée + bonus parfaite
 - Score chercheur : 100 pts par trouvaille, malus vitesse (−1/s, cap 50) et

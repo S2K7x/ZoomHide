@@ -45,6 +45,8 @@ export default function CreatePage() {
   const [size, setSize] = useState(9); // % of photo width (min 6 enforced)
   const [rotation, setRotation] = useState(0);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
+  // Indices progressifs (optionnels) : le n-ième se débloque au n-ième raté.
+  const [clues, setClues] = useState(["", "", ""]);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
   const [publishedId, setPublishedId] = useState("");
@@ -229,6 +231,9 @@ export default function CreatePage() {
         p_size_pct: size,
         p_rotation: rotation,
         p_visibility: visibility,
+        // N'envoyé que s'il y a des indices : la création reste compatible
+        // avec une base où la migration 016 n'est pas encore appliquée.
+        ...(clues.some((c) => c.trim()) && { p_clues: clues.map((c) => c.trim()).filter(Boolean) }),
       });
       if (rpcErr) throw new Error(rpcErr.message);
       const res = data as { id?: string; code?: string | null; error?: string };
@@ -645,6 +650,29 @@ export default function CreatePage() {
               className="zh-input mt-1 font-medium"
             />
           </label>
+
+          <div>
+            <p className="mb-1.5">Clues (optional)</p>
+            <div className="flex flex-col gap-2">
+              {clues.map((c, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  value={c}
+                  maxLength={80}
+                  onChange={(e) => setClues((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))}
+                  placeholder={
+                    ["e.g. Near something blue", "e.g. In the top half", "e.g. Right next to a cup"][i]
+                  }
+                  aria-label={`Clue ${i + 1}, unlocks after ${i + 1} missed ${i ? "taps" : "tap"}`}
+                  className="zh-input font-medium"
+                />
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs font-medium text-[var(--muted)]">
+              Clue 1 unlocks after a player&apos;s 1st miss, clue 2 after the 2nd, clue 3 after the 3rd.
+            </p>
+          </div>
 
           <div>
             <p className="mb-1.5">Who can play?</p>
