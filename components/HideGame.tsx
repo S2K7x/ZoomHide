@@ -9,6 +9,8 @@ import ZoomPanViewer from "@/components/ZoomPanViewer";
 import RevealShare from "@/components/RevealShare";
 import Avatar from "@/components/Avatar";
 import GameSkeleton from "@/components/GameSkeleton";
+import Mascot, { Sparkle } from "@/components/Mascot";
+import { BackIcon, FlagIcon, ShareIcon } from "@/components/Icons";
 
 type Reveal = { pos_x: number; pos_y: number; size_pct: number; rotation: number };
 type PastAttempt = { x: number; y: number; distance: number };
@@ -245,9 +247,12 @@ export default function HideGame({
 
   if (loadError) {
     return (
-      <div className="px-6 pt-20 text-center flex flex-col gap-4">
-        <p className="text-lg">{loadError}</p>
-        <Link href={backHref} className="text-violet-300 underline">← Back to {backLabel}</Link>
+      <div className="px-6 pt-16 flex flex-col items-center text-center gap-4">
+        <Mascot shape="bean" mood="sad" color="var(--sky)" size={130} />
+        <p className="zh-display text-3xl">{loadError}</p>
+        <Link href={backHref} className="zh-btn zh-btn-primary px-6 py-3">
+          <BackIcon size={18} /> Back to {backLabel}
+        </Link>
       </div>
     );
   }
@@ -273,82 +278,90 @@ export default function HideGame({
     : `${feedback ? `${feedback} ` : ""}${attemptsLeft} ${attemptsLeft > 1 ? "attempts" : "attempt"} left today.`;
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      <div className="px-4 flex items-center justify-between">
-        {/* Lien icône seule : le « ← » n'a pas de nom accessible, d'où
+    <div className="flex flex-col gap-4 pt-5">
+      <div className="px-4 flex items-center justify-between gap-2">
+        {/* Lien icône seule : la flèche n'a pas de nom accessible, d'où
             l'`aria-label` construit sur la destination. */}
-        <Link
-          href={backHref}
-          aria-label={`Back to ${backLabel}`}
-          className="grid place-items-center w-9 h-9 rounded-full zh-card text-white/70"
-        >
-          <span aria-hidden="true">←</span>
+        <Link href={backHref} aria-label={`Back to ${backLabel}`} className="zh-icon-btn shrink-0">
+          <BackIcon size={20} />
         </Link>
-        <div className="flex items-center gap-2 rounded-full zh-card px-3 py-1.5 text-sm">
-          <span className="text-white/60">Find the</span>
+        <div className="zh-card !rounded-full flex items-center gap-2 pl-2 pr-4 py-1.5 text-sm min-w-0">
           {/* silhouette neutre : on montre la FORME, jamais la couleur (l'indice
               couleur trahirait le camouflage) */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={shapeDataUrl(detail.sticker_id, HINT_COLOR)}
-            alt={getShape(detail.sticker_id).name}
-            className="w-5 h-5 opacity-90"
-          />
-          <span className="font-semibold">{getShape(detail.sticker_id).name}</span>
+          <span className="grid place-items-center w-8 h-8 rounded-full bg-yellow shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={shapeDataUrl(detail.sticker_id, HINT_COLOR)}
+              alt={getShape(detail.sticker_id).name}
+              className="w-5 h-5"
+            />
+          </span>
+          <span className="text-[var(--muted)] shrink-0">Find the</span>
+          <span className="font-bold truncate">{getShape(detail.sticker_id).name}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-white/60">
-          <Avatar name={detail.creator_name} size={22} />
+        <div className="flex items-center gap-1.5 text-xs font-semibold shrink-0">
+          <Avatar name={detail.creator_name} size={28} />
           <span className="max-w-[4.5rem] truncate">{detail.creator_name}</span>
         </div>
       </div>
 
-      <ZoomPanViewer
-        src={detail.photo_url}
-        className="w-full"
-        onTap={(x, y) => {
-          if (!gameOver && attemptsLeft > 0) setMarker({ x, y });
-        }}
-      >
-        {pastAttempts.map((a, i) => (
-          <div
-            key={i}
-            className={`absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 ${heatColor(a.distance)}`}
-            style={{ left: `${a.x}%`, top: `${a.y}%` }}
-          />
-        ))}
-        {marker && (
-          <div
-            className="absolute w-8 h-8 -ml-4 -mt-4 rounded-full border-2 border-amber-400 bg-amber-400/20"
-            style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
-          />
-        )}
-        {reveal && (
-          <div
-            className="absolute rounded-full border-[3px] border-amber-400 animate-pulse"
-            style={{
-              left: `${reveal.pos_x}%`,
-              top: `${reveal.pos_y}%`,
-              width: `${reveal.size_pct * 2}%`,
-              aspectRatio: "1",
-              transform: "translate(-50%, -50%)",
-              boxShadow: "0 0 30px 10px rgba(255,216,79,0.35)",
+      <div className="px-4">
+        <div className="overflow-hidden rounded-[2rem] ring-[5px] ring-white shadow-[0_20px_40px_-24px_rgba(0,0,0,0.6)]">
+          <ZoomPanViewer
+            src={detail.photo_url}
+            className="w-full"
+            onTap={(x, y) => {
+              if (!gameOver && attemptsLeft > 0) setMarker({ x, y });
             }}
-          />
-        )}
-      </ZoomPanViewer>
+          >
+            {pastAttempts.map((a, i) => (
+              <div
+                key={i}
+                className={`absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 ${heatColor(a.distance)}`}
+                style={{ left: `${a.x}%`, top: `${a.y}%` }}
+              />
+            ))}
+            {marker && (
+              <div
+                className="absolute w-9 h-9 -ml-[1.125rem] -mt-[1.125rem] rounded-full border-[3px] border-white bg-teal/35 shadow-[0_0_0_2px_rgba(0,0,0,0.35)]"
+                style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
+              />
+            )}
+            {reveal && (
+              <div
+                className="absolute rounded-full border-[3px] border-yellow animate-pulse"
+                style={{
+                  left: `${reveal.pos_x}%`,
+                  top: `${reveal.pos_y}%`,
+                  width: `${reveal.size_pct * 2}%`,
+                  aspectRatio: "1",
+                  transform: "translate(-50%, -50%)",
+                  boxShadow: "0 0 30px 10px rgba(255,210,63,0.4)",
+                }}
+              />
+            )}
+          </ZoomPanViewer>
+        </div>
+      </div>
 
       <div className="px-4 flex flex-col gap-3 pb-6">
         <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {liveMessage}
         </p>
         {detail.is_creator ? (
-          <p className="text-center text-white/70 text-sm">
-            This is your hide — the circle marks your shape. You can&apos;t play your own.
-          </p>
+          <div className="zh-tile bg-yellow p-5 flex items-center gap-4">
+            <Mascot shape="cat" mood="smirk" color="var(--orange)" size={76} className="shrink-0" />
+            <p className="text-sm font-semibold">
+              This is your hide — the circle marks your shape. You can&apos;t play your own.
+            </p>
+          </div>
         ) : found ? (
-          <>
-            <p aria-hidden="true" className="text-center text-xl font-black text-amber-300">
-              🎉 Found{result?.success ? ` in ${Math.round(timeMs / 1000)}s` : ""}!
+          <div className="zh-tile zh-pop bg-teal text-white p-5 flex flex-col items-center gap-4">
+            <Sparkle size={18} className="zh-twinkle absolute top-5 left-6 text-yellow" />
+            <Sparkle size={12} className="zh-twinkle absolute top-14 right-8 text-white [animation-delay:1s]" />
+            <Mascot shape="bean" mood="happy" color="var(--sky)" size={110} className="zh-float" />
+            <p aria-hidden="true" className="zh-display text-4xl text-center">
+              Found{result?.success ? ` in ${Math.round(timeMs / 1000)}s` : ""}!
             </p>
             {reveal && result?.success && (
               <RevealShare
@@ -363,28 +376,53 @@ export default function HideGame({
                 subline={`${getShape(detail.sticker_id).name} shape busted 🔎`}
               />
             )}
-          </>
+          </div>
         ) : attemptsLeft === 0 ? (
-          <p aria-hidden="true" className="text-center text-white/80">
-            😵 No attempts left today.
-            {reveal
-              ? " The shape was here 👆"
-              : resetLabel
-              ? ` Reset in ${resetLabel}.`
-              : " Come back tomorrow!"}
-          </p>
-        ) : (
-          <>
-            <div className="flex items-center justify-between text-sm">
-              <span aria-hidden="true" className="text-white/70">
-                Attempts left today:{" "}
-                <b className="text-white">{"●".repeat(attemptsLeft)}{"○".repeat(3 - attemptsLeft)}</b>
-              </span>
-              <span className="text-white/50 text-xs">Pinch to zoom</span>
+          <div aria-hidden="true" className="zh-tile zh-pop bg-pink p-5 flex items-center gap-4">
+            <Mascot shape="cat" mood="sad" color="var(--yellow)" size={84} className="shrink-0" />
+            <div>
+              <p className="zh-display text-2xl">Out of tries!</p>
+              <p className="text-sm font-medium text-ink/75 mt-1">
+                {reveal
+                  ? "The shape was here 👆"
+                  : resetLabel
+                  ? `New tries in ${resetLabel}.`
+                  : "Come back tomorrow!"}
+              </p>
             </div>
-            {feedback && <p aria-hidden="true" className="text-center font-semibold">{feedback}</p>}
+          </div>
+        ) : (
+          <div className="zh-card p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3 text-sm" aria-hidden="true">
+              <div className="flex-1 flex items-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className={`h-2.5 flex-1 rounded-full transition-colors ${
+                      i < attemptsLeft ? "bg-orange" : "bg-ink/10"
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="font-bold whitespace-nowrap">
+                {attemptsLeft} {attemptsLeft > 1 ? "tries" : "try"} left
+              </span>
+            </div>
+            {feedback ? (
+              <p
+                aria-hidden="true"
+                key={feedback + pastAttempts.length}
+                className="zh-pop rounded-2xl bg-purple text-white text-center font-bold py-3 px-4"
+              >
+                {feedback}
+              </p>
+            ) : (
+              <p className="text-center text-sm text-[var(--muted)]">
+                Pinch or scroll to zoom · tap where it hides
+              </p>
+            )}
             {pastAttempts.length > 0 && (
-              <p className="text-center text-xs text-white/40">
+              <p className="text-center text-xs text-[var(--muted)]">
                 Colored rings mark your past taps — 🧊 blue is cold, 🔥 red is close.
               </p>
             )}
@@ -396,13 +434,13 @@ export default function HideGame({
                 autoFocus
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your nickname for the leaderboard"
-                className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2"
+                className="zh-input"
               />
             )}
             <button
               onClick={submitAttempt}
               disabled={!marker || submitting || (askName && !name.trim())}
-              className="zh-btn zh-btn-primary py-3.5"
+              className="zh-btn zh-btn-primary py-4 text-base"
             >
               {submitting
                 ? "Checking…"
@@ -412,24 +450,30 @@ export default function HideGame({
                   : "Submit this tap 🎯"
                 : "Tap the photo to aim"}
             </button>
-          </>
+          </div>
         )}
 
         <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center justify-center gap-4">
-            <button onClick={shareHide} className="text-xs text-white/40 underline">
-              {shareState === "copied" ? "✅ Link copied!" : "🔗 Share this hide"}
+          <div className="flex items-center justify-center gap-2">
+            <button onClick={shareHide} className="zh-btn zh-btn-ghost px-4 py-2 text-xs">
+              {shareState === "copied" ? (
+                "✓ Link copied!"
+              ) : (
+                <>
+                  <ShareIcon size={15} /> Share this hide
+                </>
+              )}
             </button>
             <button
               onClick={() => setShowReport(true)}
-              className="text-xs text-white/40 underline"
+              className="zh-btn zh-btn-ghost px-4 py-2 text-xs"
             >
-              🚩 Report this hide
+              <FlagIcon size={15} /> Report
             </button>
           </div>
           {shareState === "failed" && (
             <div className="w-full flex flex-col gap-1.5">
-              <p className="text-xs text-white/50 text-center">
+              <p className="text-xs text-[var(--muted)] text-center">
                 Couldn&apos;t copy automatically — copy the link below.
               </p>
               <input
@@ -439,7 +483,7 @@ export default function HideGame({
                 value={shareUrl}
                 aria-label="Link to this hide, copy it manually"
                 onFocus={(e) => e.currentTarget.select()}
-                className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-xs text-white/80"
+                className="zh-input text-xs"
               />
             </div>
           )}
@@ -448,16 +492,16 @@ export default function HideGame({
 
       {showReport && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-6"
+          className="fixed inset-0 z-[60] grid place-items-center bg-ink/50 backdrop-blur-sm px-6"
           onClick={() => !reportSubmitting && closeReport()}
         >
           <div
-            className="zh-card w-full max-w-sm p-5 flex flex-col gap-3"
+            className="zh-card zh-pop w-full max-w-sm p-5 flex flex-col gap-3"
             onClick={(e) => e.stopPropagation()}
           >
             {reportDone ? (
               <>
-                <p className="text-center font-semibold">Thanks, the hide has been reported.</p>
+                <p className="text-center font-bold">Thanks, the hide has been reported.</p>
                 <button
                   onClick={() => {
                     closeReport();
@@ -471,7 +515,7 @@ export default function HideGame({
               </>
             ) : (
               <>
-                <p className="font-semibold">Why report this hide?</p>
+                <p className="zh-display text-2xl">Why report this hide?</p>
                 <textarea
                   value={reportReason}
                   maxLength={280}
@@ -479,10 +523,10 @@ export default function HideGame({
                   onChange={(e) => setReportReason(e.target.value)}
                   placeholder="Inappropriate photo, unclear shape, etc."
                   rows={3}
-                  className="w-full rounded-xl bg-white/10 border border-white/15 px-3 py-2 text-sm resize-none"
+                  className="zh-input text-sm resize-none"
                 />
                 {reportError && (
-                  <p role="alert" className="text-sm text-rose-300">{reportError}</p>
+                  <p role="alert" className="text-sm font-semibold text-rose-600">{reportError}</p>
                 )}
                 <div className="flex gap-2">
                   <button
