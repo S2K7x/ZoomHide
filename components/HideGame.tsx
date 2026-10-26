@@ -11,9 +11,9 @@ import Avatar from "@/components/Avatar";
 import GameSkeleton from "@/components/GameSkeleton";
 import Mascot, { Sparkle } from "@/components/Mascot";
 import { BackIcon, FlagIcon, ShareIcon } from "@/components/Icons";
+import { HEAT, heatLevel, heatTrend, loadHistory, saveHistory, shareText, type Tap } from "@/lib/heat";
 
 type Reveal = { pos_x: number; pos_y: number; size_pct: number; rotation: number };
-type PastAttempt = { x: number; y: number; distance: number };
 
 type Detail = {
   id: string;
@@ -110,10 +110,12 @@ export default function HideGame({
   const [reportSubmitting, setReportSubmitting] = useState(false);
   const [reportDone, setReportDone] = useState(false);
   const [reportError, setReportError] = useState("");
-  const [pastAttempts, setPastAttempts] = useState<PastAttempt[]>([]);
+  const [pastAttempts, setPastAttempts] = useState<Tap[]>([]);
+  // Dernier raté : palier chaud/froid + tendance vs le tap précédent.
+  const [miss, setMiss] = useState<{ level: number; trend: string | null } | null>(null);
   // "failed" = le presse-papier a refusé : on retombe sur l'URL affichée en
   // clair, que le joueur copie à la main (shareUrl).
-  const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
+  const [shareState, setShareState] = useState<"idle" | "copied" | "copiedResult" | "failed">("idle");
   const [shareUrl, setShareUrl] = useState("");
 
   const reveal: Reveal | null = result?.reveal ?? detail?.reveal ?? null;
@@ -151,7 +153,8 @@ export default function HideGame({
       return;
     }
     setDetail(d);
-    setPastAttempts([]);
+    setPastAttempts(loadHistory(hideId).taps);
+    setMiss(null);
     startTime.current = Date.now();
   }, [hideId]);
 
@@ -168,6 +171,7 @@ export default function HideGame({
     }
     setSubmitting(true);
     setFeedback("");
+    setMiss(null);
     if (name) setPlayerName(name);
     const elapsed = Date.now() - startTime.current;
     const { data, error } = await supabase.rpc("try_attempt", {
@@ -192,15 +196,17 @@ export default function HideGame({
     setResult(r);
     setTimeMs(elapsed);
     if (r.success) {
+      saveHistory(hideId, { taps: pastAttempts, found: true, timeMs: elapsed });
       vibrate([15, 60, 15]);
     } else {
       const d = r.distance ?? 100;
-      setFeedback(
-        d < 8 ? "🔥 Burning! So close…" :
-        d < 18 ? "♨️ Hot, getting warmer." :
-        d < 35 ? "🌤️ Lukewarm." : "🧊 Cold, look elsewhere."
-      );
-      setPastAttempts((prev) => [...prev, { x: marker.x, y: marker.y, distance: d }]);
+      const level = heatLevel(d);
+      const trend = heatTrend(d, pastAttempts.at(-1)?.distance);
+      setFeedback(`${HEAT[level].label}${trend ? ` ${trend}.` : ""}`);
+      setMiss({ level, trend });
+      const taps = [...pastAttempts, { x: marker.x, y: marker.y, distance: d }];
+      setPastAttempts(taps);
+      saveHistory(hideId, { taps });
       vibrate(20);
     }
     setMarker(null);
@@ -208,13 +214,26 @@ export default function HideGame({
 
   // Partage le lien de CETTE cachette (utile pour défier des amis sur le
   // même hide) — juste l'URL courante, aucune donnée serveur en plus.
-  const shareHide = async () => {
+  // Avec `withResult`, partage aussi la grille chaud/froid façon Wordle
+  // (🟦🟨🟧🟩) : montre le parcours sans jamais trahir la position.
+  const shareHide = async (withResult = false) => {
     if (!detail || typeof window === "undefined") return;
     const url = window.location.href;
     const shapeName = getShape(detail.sticker_id).name;
+    const text = withResult
+      ? shareText({
+          shapeName,
+          taps: pastAttempts,
+          found: !!found,
+          timeMs: result?.success ? timeMs : loadHistory(hideId).timeMs,
+          url,
+        })
+      : null;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Zoom Hide", text: `Can you find the ${shapeName}?`, url });
+        await navigator.share(
+          text ? { title: "Zoom Hide", text } : { title: "Zoom Hide", text: `Can you find the ${shapeName}?`, url }
+        );
         return;
       } catch (e) {
         // Feuille de partage fermée volontairement : ne rien afficher, le
@@ -224,14 +243,14 @@ export default function HideGame({
       }
     }
     try {
-      await navigator.clipboard.writeText(url);
-      setShareState("copied");
-      setTimeout(() => setShareState((s) => (s === "copied" ? "idle" : s)), 1500);
+      await navigator.clipboard.writeText(text ?? url);
+      setShareState(text ? "copiedResult" : "copied");
+      setTimeout(() => setShareState((s) => (s === "copied" || s === "copiedResult" ? "idle" : s)), 1500);
     } catch {
       // Presse-papier indisponible ou refusé (iOS Safari hors geste direct,
       // contexte non sécurisé) : on montre l'URL, sélectionnée, à copier à la
       // main plutôt que de laisser le clic sans réponse.
-      setShareUrl(url);
+      setShareUrl(text ?? url);
       setShareState("failed");
     }
   };
@@ -239,11 +258,15 @@ export default function HideGame({
   // Couleur du repère selon la distance renvoyée par le serveur à cette
   // tentative — aide le joueur à mémoriser les zones déjà écartées sans
   // jamais révéler la position exacte.
-  const heatColor = (d: number) =>
-    d < 8 ? "border-rose-400 bg-rose-400/25" :
-    d < 18 ? "border-orange-400 bg-orange-400/20" :
-    d < 35 ? "border-yellow-300 bg-yellow-300/15" :
-    "border-sky-400 bg-sky-400/15";
+  const heatColor = (d: number) => HEAT[heatLevel(d)].ring;
+
+  const shareResultButton = (
+    <button onClick={() => shareHide(true)} className="zh-btn zh-btn-ghost px-5 py-3 text-sm">
+      {shareState === "copiedResult" ? "✓ Result copied!" : <>
+        <ShareIcon size={16} /> Share my result
+      </>}
+    </button>
+  );
 
   if (loadError) {
     return (
@@ -376,20 +399,27 @@ export default function HideGame({
                 subline={`${getShape(detail.sticker_id).name} shape busted 🔎`}
               />
             )}
+            <p aria-hidden="true" className="text-2xl tracking-wider">
+              {pastAttempts.slice(-12).map((a) => HEAT[heatLevel(a.distance)].square).join("")}🟩
+            </p>
+            {shareResultButton}
           </div>
         ) : attemptsLeft === 0 ? (
-          <div aria-hidden="true" className="zh-tile zh-pop bg-pink p-5 flex items-center gap-4">
-            <Mascot shape="cat" mood="sad" color="var(--yellow)" size={84} className="shrink-0" />
-            <div>
-              <p className="zh-display text-2xl">Out of tries!</p>
-              <p className="text-sm font-medium text-ink/75 mt-1">
-                {reveal
-                  ? "The shape was here 👆"
-                  : resetLabel
-                  ? `New tries in ${resetLabel}.`
-                  : "Come back tomorrow!"}
-              </p>
+          <div className="zh-tile zh-pop bg-pink p-5 flex flex-col items-center gap-4">
+            <div aria-hidden="true" className="w-full flex items-center gap-4">
+              <Mascot shape="cat" mood="sad" color="var(--yellow)" size={84} className="shrink-0" />
+              <div>
+                <p className="zh-display text-2xl">Out of tries!</p>
+                <p className="text-sm font-medium text-ink/75 mt-1">
+                  {reveal
+                    ? "The shape was here 👆"
+                    : resetLabel
+                    ? `New tries in ${resetLabel}.`
+                    : "Come back tomorrow!"}
+                </p>
+              </div>
             </div>
+            {pastAttempts.length > 0 && shareResultButton}
           </div>
         ) : (
           <div className="zh-card p-4 flex flex-col gap-3">
@@ -408,7 +438,29 @@ export default function HideGame({
                 {attemptsLeft} {attemptsLeft > 1 ? "tries" : "try"} left
               </span>
             </div>
-            {feedback ? (
+            {miss ? (
+              <div
+                aria-hidden="true"
+                key={pastAttempts.length}
+                className="zh-pop rounded-2xl bg-purple text-white p-3 flex flex-col gap-2"
+              >
+                <p className="text-center font-bold">{HEAT[miss.level].label}</p>
+                {/* Thermomètre : 4 paliers, de 🧊 à 🔥, le palier atteint allumé */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">🧊</span>
+                  {HEAT.map((h, i) => (
+                    <span
+                      key={h.short}
+                      className={`h-2.5 flex-1 rounded-full ${i <= miss.level ? h.bar : "bg-white/20"}`}
+                    />
+                  ))}
+                  <span className="text-sm">🔥</span>
+                </div>
+                {miss.trend && (
+                  <p className="text-center text-sm font-semibold text-white/85">{miss.trend}</p>
+                )}
+              </div>
+            ) : feedback ? (
               <p
                 aria-hidden="true"
                 key={feedback + pastAttempts.length}
@@ -455,7 +507,7 @@ export default function HideGame({
 
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center justify-center gap-2">
-            <button onClick={shareHide} className="zh-btn zh-btn-ghost px-4 py-2 text-xs">
+            <button onClick={() => shareHide()} className="zh-btn zh-btn-ghost px-4 py-2 text-xs">
               {shareState === "copied" ? (
                 "✓ Link copied!"
               ) : (
@@ -476,14 +528,15 @@ export default function HideGame({
               <p className="text-xs text-[var(--muted)] text-center">
                 Couldn&apos;t copy automatically — copy the link below.
               </p>
-              <input
-                type="text"
+              {/* textarea : le résultat partagé tient sur plusieurs lignes */}
+              <textarea
                 readOnly
                 autoFocus
+                rows={shareUrl.includes("\n") ? 3 : 1}
                 value={shareUrl}
-                aria-label="Link to this hide, copy it manually"
+                aria-label="Text to share, copy it manually"
                 onFocus={(e) => e.currentTarget.select()}
-                className="zh-input text-xs"
+                className="zh-input text-xs resize-none"
               />
             </div>
           )}

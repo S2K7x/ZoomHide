@@ -2,6 +2,21 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-10-26 (2)
+
+**Jeu : retour chaud/froid plus lisible et résultat partageable sans spoiler
+(façon Wordle).**
+
+- `lib/heat.ts` (nouveau) : paliers chaud/froid centralisés (libellé, carré
+  emoji, couleur d'anneau), tendance « plus chaud / plus froid que le tap
+  précédent », historique local des taps par cachette et génération du texte
+  de partage (`🟦🟨🟧🟩 Found in 42s!` + lien).
+- `components/HideGame.tsx` : après un raté, thermomètre à 4 paliers + tendance
+  vs le tap précédent ; les anneaux des taps passés survivent au rechargement
+  (`localStorage`) ; bouton « Share my result » sur l'écran trouvé et sur
+  l'écran sans essais. Aucune donnée de position supplémentaire côté client,
+  aucune migration SQL.
+
 ## 2026-10-26
 
 **Refonte visuelle « playground » : fond crème, typo display grasse, aplats
