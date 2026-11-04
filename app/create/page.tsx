@@ -46,6 +46,8 @@ export default function CreatePage() {
   const [rotation, setRotation] = useState(0);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [publishing, setPublishing] = useState(false);
+  // ratio réel de la photo : sert à plafonner le cadre en hauteur sans bandes
+  const [photoAspect, setPhotoAspect] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [publishedId, setPublishedId] = useState("");
   const [publishedCode, setPublishedCode] = useState<string | null>(null);
@@ -276,9 +278,9 @@ export default function CreatePage() {
 
   if (loading) {
     return (
-      <div role="status" aria-label="Loading" className="px-5 pt-6 flex flex-col gap-5">
+      <div role="status" aria-label="Loading" className="zh-page zh-page-mid pt-6 md:pt-10 flex flex-col gap-5">
         <div className="h-24 w-48 rounded-3xl zh-skeleton" />
-        <div className="h-72 w-full rounded-[2rem] zh-skeleton" />
+        <div className="h-72 md:h-96 w-full rounded-[2rem] zh-skeleton" />
       </div>
     );
   }
@@ -288,7 +290,7 @@ export default function CreatePage() {
   // écran — le message d'erreur en ligne suffit.
   if (loadError && !photo) {
     return (
-      <div className="px-6 pt-14">
+      <div className="zh-page zh-page-narrow pt-14">
         <div className="zh-card text-center py-8 px-6 flex flex-col items-center gap-3">
           <Mascot shape="bean" mood="sad" color="var(--sky)" size={96} />
           <p className="text-[var(--muted)]">Couldn&apos;t check your hides. Check your connection.</p>
@@ -306,7 +308,7 @@ export default function CreatePage() {
       const link = `${window.location.origin}/play/private/${publishedId}`;
       const pretty = `${publishedCode.slice(0, 3)} ${publishedCode.slice(3)}`;
       return (
-        <div className="px-5 pt-8 text-center flex flex-col gap-4 zh-pop">
+        <div className="zh-page zh-page-narrow pt-8 md:pt-12 text-center flex flex-col gap-4 zh-pop">
           <div className="zh-tile bg-purple text-white pt-6 pb-0 flex flex-col items-center">
             <Sparkle size={18} className="zh-twinkle absolute top-5 left-6 text-yellow" />
             <h1 className="zh-display text-4xl px-6">Private hide ready!</h1>
@@ -334,7 +336,7 @@ export default function CreatePage() {
       );
     }
     return (
-      <div className="px-5 pt-8 text-center flex flex-col gap-4 zh-pop">
+      <div className="zh-page zh-page-narrow pt-8 md:pt-12 text-center flex flex-col gap-4 zh-pop">
         <div className="zh-tile bg-lime pt-6 flex flex-col items-center">
           <Sparkle size={18} className="zh-twinkle absolute top-5 left-6 text-white" />
           <Sparkle size={12} className="zh-twinkle absolute top-16 right-8 text-white [animation-delay:1s]" />
@@ -366,13 +368,12 @@ export default function CreatePage() {
       Math.ceil((new Date(myHide.expires_at).getTime() - Date.now()) / 86400000)
     );
     return (
-      <div className="px-5 pt-6 flex flex-col gap-4">
-        <h1 className="zh-display text-[2.8rem]">
+      <div className="zh-page zh-page-mid pt-6 md:pt-10 flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:gap-x-12 lg:items-start">
+        <h1 className="zh-display text-[2.8rem] md:text-[3.6rem] lg:col-start-2">
           Your
-          <br />
-          active hide
+          <br className="md:hidden" /> active hide
         </h1>
-        <div className="zh-tile bg-orange p-2">
+        <div className="zh-tile bg-orange p-2 md:max-w-md md:w-full md:mx-auto lg:mx-0 lg:col-start-1 lg:row-start-1 lg:row-span-6 -rotate-[0.6deg]">
           <div className="relative overflow-hidden rounded-[1.5rem]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={myHide.thumbnail_url} alt="Your hide" className="w-full" />
@@ -383,7 +384,7 @@ export default function CreatePage() {
           </span>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-3 gap-2 text-center lg:col-start-2">
           <div className="zh-card !rounded-3xl py-3">
             <p className="zh-display text-2xl">{daysLeft}d</p>
             <p className="text-[11px] font-semibold text-[var(--muted)]">left</p>
@@ -401,7 +402,7 @@ export default function CreatePage() {
             </p>
           </div>
         </div>
-        <div className="zh-card p-4 text-sm space-y-1">
+        <div className="zh-card p-4 text-sm space-y-1 lg:col-start-2">
           <p className="font-bold">{myHide.visibility === "private" ? "🔒 Private hide" : "🌍 Public hide"}</p>
           <p className="text-[var(--muted)]">
             Only one active hide at a time. Delete it or wait for it to expire to
@@ -409,7 +410,7 @@ export default function CreatePage() {
           </p>
         </div>
         {myHide.visibility === "private" && myHide.code && (
-          <div className="zh-tile bg-purple text-white p-5 text-center flex flex-col gap-2">
+          <div className="zh-tile bg-purple text-white p-5 text-center flex flex-col gap-2 lg:col-start-2">
             <p className="text-xs uppercase tracking-widest font-bold text-white/70">Private code</p>
             <p className="zh-display text-4xl tracking-[0.2em]">
               {myHide.code.slice(0, 3)} {myHide.code.slice(3)}
@@ -433,7 +434,7 @@ export default function CreatePage() {
             setDeleteError("");
             setShowDeleteConfirm(true);
           }}
-          className="zh-btn py-3.5 bg-white text-rose-600 shadow-[inset_0_0_0_1.5px_rgba(225,29,72,0.35)]"
+          className="zh-btn py-3.5 bg-white text-rose-600 shadow-[inset_0_0_0_1.5px_rgba(225,29,72,0.35)] lg:col-start-2"
         >
           🗑️ Delete this hide
         </button>
@@ -478,89 +479,96 @@ export default function CreatePage() {
   // ---- placement step ----
   if (photo) {
     return (
-      <div className="pt-6 flex flex-col gap-4">
-        <div className="px-4 flex items-center gap-3">
-          <button onClick={() => setPhoto(null)} aria-label="Back to photo choice" className="zh-icon-btn shrink-0">
-            <BackIcon size={20} />
-          </button>
-          <h1 className="zh-display text-3xl">Place your shape</h1>
-        </div>
-        <p className="px-4 text-sm text-[var(--muted)]">
-          {eyedrop
-            ? "🎨 Tap the photo to copy that exact color onto your shape."
-            : "Drag the shape where it blends best. Play with color and size."}
-        </p>
-        <div className="px-4">
-        <div
-          ref={photoRef}
-          className={`relative touch-none select-none overflow-hidden rounded-[2rem] ring-[5px] ring-white shadow-[0_20px_40px_-24px_rgba(0,0,0,0.6)] ${eyedrop ? "cursor-crosshair" : ""}`}
-          onPointerMove={moveSticker}
-          onPointerUp={() => (dragging.current = false)}
-          onPointerCancel={() => (dragging.current = false)}
-          onPointerDown={(e) => {
-            if (!eyedrop || !photoRef.current) return;
-            const rect = photoRef.current.getBoundingClientRect();
-            sampleFromPhoto(
-              ((e.clientX - rect.left) / rect.width) * 100,
-              ((e.clientY - rect.top) / rect.height) * 100
-            );
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={photo.url} alt="Your photo" className="w-full" draggable={false} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={shapeDataUrl(shapeId, color)}
-            alt="Shape"
-            draggable={false}
-            onPointerDown={(e) => {
-              if (eyedrop) return; // en mode pipette, on échantillonne au lieu de déplacer
-              dragging.current = true;
-              (e.target as Element).setPointerCapture?.(e.pointerId);
-            }}
-            className="absolute cursor-grab active:cursor-grabbing"
-            style={{
-              left: `${pos.x}%`,
-              top: `${pos.y}%`,
-              width: `${size}%`,
-              transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-            }}
-          />
-        </div>
+      <div className="zh-page !px-0 md:!px-8 lg:!px-10 pt-6 md:pt-10 flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-x-10 lg:gap-y-4 lg:items-start">
+        <div className="px-4 md:px-0 flex flex-col gap-2 lg:col-start-1">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setPhoto(null)} aria-label="Back to photo choice" className="zh-icon-btn shrink-0">
+              <BackIcon size={20} />
+            </button>
+            <h1 className="zh-display text-3xl md:text-4xl">Place your shape</h1>
+          </div>
+          <p className="text-sm md:text-base text-[var(--muted)]">
+            {eyedrop
+              ? "🎨 Tap the photo to copy that exact color onto your shape."
+              : "Drag the shape where it blends best. Play with color and size."}
+          </p>
         </div>
 
-        <div className="px-4 flex gap-2 overflow-x-auto zh-noscroll pb-1">
+        <div className="px-4 md:px-0 lg:col-start-1">
+          <div
+            ref={photoRef}
+            className={`relative touch-none select-none overflow-hidden rounded-[2rem] ring-[5px] ring-white shadow-[0_20px_40px_-24px_rgba(0,0,0,0.6)] mx-auto ${eyedrop ? "cursor-crosshair" : ""}`}
+            // - 6rem : le titre et la consigne occupent le haut de l'écran ici
+            style={photoAspect ? { maxWidth: `calc((var(--zh-photo-max) - 6rem) * ${photoAspect})` } : undefined}
+            onPointerMove={moveSticker}
+            onPointerUp={() => (dragging.current = false)}
+            onPointerCancel={() => (dragging.current = false)}
+            onPointerDown={(e) => {
+              if (!eyedrop || !photoRef.current) return;
+              const rect = photoRef.current.getBoundingClientRect();
+              sampleFromPhoto(
+                ((e.clientX - rect.left) / rect.width) * 100,
+                ((e.clientY - rect.top) / rect.height) * 100
+              );
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo.url}
+              alt="Your photo"
+              className="w-full"
+              draggable={false}
+              onLoad={(e) => {
+                const i = e.currentTarget;
+                if (i.naturalWidth && i.naturalHeight) setPhotoAspect(i.naturalWidth / i.naturalHeight);
+              }}
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={shapeDataUrl(shapeId, color)}
+              alt="Shape"
+              draggable={false}
+              onPointerDown={(e) => {
+                if (eyedrop) return; // en mode pipette, on échantillonne au lieu de déplacer
+                dragging.current = true;
+                (e.target as Element).setPointerCapture?.(e.pointerId);
+              }}
+              className="absolute cursor-grab active:cursor-grabbing"
+              style={{
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+                width: `${size}%`,
+                transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-24">
+        <div className="px-4 md:px-0 flex gap-2 overflow-x-auto zh-noscroll pb-1 lg:flex-wrap lg:overflow-visible">
           {SHAPES.map((s) => (
             <button
               key={s.id}
               onClick={() => setShapeId(s.id)}
               aria-pressed={s.id === shapeId}
               className={`shrink-0 rounded-2xl p-2.5 transition-colors ${
-                s.id === shapeId ? "bg-ink shadow-lg" : "bg-white shadow-[inset_0_0_0_1.5px_var(--line)]"
+                s.id === shapeId ? "bg-ink shadow-lg" : "bg-white shadow-[inset_0_0_0_1.5px_var(--line)] hover:bg-[#fafafa]"
               }`}
               title={s.name}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={shapeDataUrl(s.id, color)} alt={s.name} className="w-9 h-9" />
+              <img src={shapeDataUrl(s.id, color)} alt={s.name} className="w-9 h-9 lg:w-8 lg:h-8" />
             </button>
           ))}
         </div>
 
-        <div className="mx-4 zh-card p-4 space-y-4 text-sm font-semibold">
+        <div className="mx-4 md:mx-0 zh-card p-4 md:p-5 space-y-4 text-sm font-semibold">
           {/* Pipette + aperçu de la couleur courante */}
           <div className="flex items-center gap-2">
             <span
-              className="w-11 h-11 rounded-full ring-2 ring-white shadow-md shrink-0 overflow-hidden"
-              style={{
-                backgroundColor: color,
-                backgroundImage:
-                  "linear-gradient(45deg,#666 25%,transparent 25%,transparent 75%,#666 75%),linear-gradient(45deg,#666 25%,#444 25%,#444 75%,#666 75%)",
-                backgroundSize: "10px 10px",
-                backgroundPosition: "0 0,5px 5px",
-              }}
-            >
-              <span className="block w-full h-full" style={{ backgroundColor: color }} />
-            </span>
+              className="w-11 h-11 rounded-full ring-2 ring-white shadow-md shrink-0"
+              style={{ backgroundColor: color }}
+            />
             <button
               type="button"
               onClick={() => setEyedrop((v) => !v)}
@@ -578,7 +586,7 @@ export default function CreatePage() {
                 key={hex}
                 type="button"
                 onClick={() => applyColorFromHex(hex)}
-                className="w-8 h-8 rounded-full ring-2 ring-white shadow-[0_0_0_3.5px_var(--line)]"
+                className="w-8 h-8 rounded-full ring-2 ring-white shadow-[0_0_0_3.5px_var(--line)] transition-transform hover:scale-110 active:scale-95"
                 style={{ backgroundColor: hex }}
                 title={hex}
                 aria-label={`Use color ${hex}`}
@@ -591,7 +599,7 @@ export default function CreatePage() {
             <input
               type="range" min={0} max={360} step={1} value={hue}
               onChange={(e) => setHue(Number(e.target.value))}
-              className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
+              className="zh-range mt-2"
               style={{
                 background:
                   "linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)",
@@ -599,50 +607,55 @@ export default function CreatePage() {
             />
           </label>
           <label className="block">
-            Saturation — {sat < 20 ? "muted / grey" : sat > 80 ? "vivid" : "medium"}
+            Saturation <span className="text-[var(--muted)]">— {sat < 20 ? "muted / grey" : sat > 80 ? "vivid" : "medium"}</span>
             <input
               type="range" min={0} max={100} step={1} value={sat}
               onChange={(e) => setSat(Number(e.target.value))}
-              className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
+              className="zh-range mt-2"
               style={{
                 background: `linear-gradient(to right, ${hslToHex(hue, 0, light)}, ${hslToHex(hue, 100, light)})`,
               }}
             />
           </label>
           <label className="block">
-            Shade — {light < 25 ? "dark" : light > 75 ? "light" : "medium"}
+            Shade <span className="text-[var(--muted)]">— {light < 25 ? "dark" : light > 75 ? "light" : "medium"}</span>
             <input
               type="range" min={5} max={95} step={1} value={light}
               onChange={(e) => setLight(Number(e.target.value))}
-              className="w-full mt-1 h-3 rounded-full appearance-none cursor-pointer"
+              className="zh-range mt-2"
               style={{
                 background: `linear-gradient(to right, #000, ${hslToHex(hue, sat, 50)}, #fff)`,
               }}
             />
           </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              Size <span className="text-[var(--muted)]">— {size.toFixed(0)}%</span>
+              <input
+                type="range" min={6} max={30} step={0.5} value={size}
+                onChange={(e) => setSize(Number(e.target.value))}
+                className="zh-range mt-2"
+              />
+            </label>
+            <label className="block">
+              Rotation <span className="text-[var(--muted)]">— {rotation.toFixed(0)}°</span>
+              <input
+                type="range" min={-180} max={180} step={5} value={rotation}
+                onChange={(e) => setRotation(Number(e.target.value))}
+                className="zh-range mt-2"
+              />
+            </label>
+          </div>
+          {size <= 6.5 && (
+            <p className="-mt-2 text-xs text-orange">Minimum size — keep it findable!</p>
+          )}
           <label className="block">
-            Size — {size.toFixed(0)}%{size <= 6.5 && <span className="text-orange"> (min — keep it findable!)</span>}
-            <input
-              type="range" min={6} max={30} step={0.5} value={size}
-              onChange={(e) => setSize(Number(e.target.value))}
-              className="w-full mt-1 accent-[var(--teal)]"
-            />
-          </label>
-          <label className="block">
-            Rotation — {rotation.toFixed(0)}°
-            <input
-              type="range" min={-180} max={180} step={5} value={rotation}
-              onChange={(e) => setRotation(Number(e.target.value))}
-              className="w-full mt-1 accent-[var(--teal)]"
-            />
-          </label>
-          <label className="block">
-            Your nickname (for the leaderboard)
+            Your nickname <span className="text-[var(--muted)]">(for the leaderboard)</span>
             <input
               type="text" value={name} maxLength={24}
               onChange={(e) => setName(e.target.value)}
               placeholder="Anonymous"
-              className="zh-input mt-1 font-medium"
+              className="zh-input mt-1.5 font-medium"
             />
           </label>
 
@@ -672,9 +685,9 @@ export default function CreatePage() {
           </div>
         </div>
 
-        {error && <p className="px-4 text-rose-600 font-semibold text-sm">{error}</p>}
+        {error && <p className="px-4 md:px-0 text-rose-600 font-semibold text-sm">{error}</p>}
 
-        <div className="px-4 flex gap-2 pb-4">
+        <div className="px-4 md:px-0 flex gap-2 pb-4">
           <button
             onClick={() => setPhoto(null)}
             className="zh-btn zh-btn-ghost flex-1 py-4"
@@ -689,19 +702,36 @@ export default function CreatePage() {
             {publishing ? "Publishing…" : "Publish hide 🚀"}
           </button>
         </div>
+        </div>
       </div>
     );
   }
 
   // ---- upload step ----
   return (
-    <div className="px-5 pt-6 flex flex-col gap-5">
-      <h1 className="zh-display text-[2.8rem]">
-        Hide a
-        <br />
-        Shape
-      </h1>
-      <div className="zh-tile bg-sky h-[21rem]">
+    <div className="zh-page zh-page-mid pt-6 md:pt-10 flex flex-col gap-5 md:grid md:grid-cols-2 md:gap-x-8 lg:gap-x-12 md:items-start">
+      <div className="flex flex-col gap-5 md:col-start-1">
+        <h1 className="zh-display text-[2.8rem] md:text-[3.6rem] lg:text-[4.4rem]">
+          Hide a
+          <br />
+          Shape
+        </h1>
+        <ol className="hidden md:flex flex-col gap-3 text-[15px]">
+          {[
+            ["bg-yellow", "Pick a busy photo from your real life."],
+            ["bg-pink", "Choose a shape and a color that blends in."],
+            ["bg-lime", "Drag it into place and publish for 7 days."],
+          ].map(([bg, t], i) => (
+            <li key={t} className="flex items-center gap-3">
+              <span aria-hidden="true" className={`grid place-items-center w-9 h-9 rounded-full ${bg} zh-display text-lg shrink-0`}>
+                {i + 1}
+              </span>
+              <span className="text-[var(--muted)]">{t}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="zh-tile bg-sky h-[21rem] md:h-[24rem] lg:h-[26rem] md:col-start-2 md:row-start-1 md:row-span-2 md:rotate-[0.6deg]">
         <Sparkle size={20} className="zh-twinkle absolute top-5 left-5 text-white" />
         <Sparkle size={14} className="zh-twinkle absolute top-20 right-8 text-white [animation-delay:1.2s]" />
         <p className="zh-bubble absolute top-6 left-1/2 -translate-x-1/2 w-[82%] text-center text-sm font-semibold px-5 py-3">
@@ -715,18 +745,18 @@ export default function CreatePage() {
           size={200}
           className="zh-float absolute -bottom-10 -right-4"
         />
-        <label className="zh-btn zh-btn-primary absolute bottom-5 left-5 px-6 py-4 text-base cursor-pointer">
+        <label className="zh-btn zh-btn-primary absolute bottom-5 left-5 z-10 px-6 py-4 text-base cursor-pointer focus-within:outline focus-within:outline-[2.5px] focus-within:outline-[var(--ring)] focus-within:outline-offset-2">
           <CameraIcon size={20} /> Choose a photo
           <input
             type="file"
             accept="image/*"
-            className="hidden"
+            className="sr-only"
             onChange={(e) => e.target.files?.[0] && pickFile(e.target.files[0])}
           />
         </label>
       </div>
-      {error && <p className="text-rose-600 font-semibold text-sm">{error}</p>}
-      <p className="zh-card p-4 text-xs text-[var(--muted)] leading-relaxed">
+      {error && <p className="text-rose-600 font-semibold text-sm md:col-start-1">{error}</p>}
+      <p className="zh-card p-4 text-xs text-[var(--muted)] leading-relaxed md:col-start-1">
         🛡️ Mind your privacy: avoid recognizable faces, addresses, documents or
         sensitive info in the photo. It will be visible to all players for 7 days.
       </p>

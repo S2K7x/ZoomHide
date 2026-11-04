@@ -17,6 +17,15 @@
   --purple: #8a5cf6;
   --lime: #86cf7c;
   --ring: rgba(15, 157, 132, 0.8);
+  /* Hauteur max du cadre photo (jeu, placement). Plus généreuse sur grand
+     écran, où la photo partage l'espace avec un panneau latéral. */
+  --zh-photo-max: 72dvh;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --zh-photo-max: calc(100dvh - 11rem);
+  }
 }
 
 @theme inline {
@@ -47,6 +56,38 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23161616' stroke-opacity='0.045' stroke-width='1.6'%3E%3Cpath d='M-10 40c30-22 60 18 95 0s55-30 90-6 45 10 60 4'/%3E%3Cpath d='M-10 110c25-18 55 20 92 2s60-34 92-8 40 14 60 6'/%3E%3Cpath d='M-10 180c30-20 62 16 96-2s56-28 88-4 46 12 62 2'/%3E%3Ccircle cx='160' cy='70' r='14'/%3E%3Ccircle cx='160' cy='70' r='24'/%3E%3Ccircle cx='50' cy='150' r='10'/%3E%3C/g%3E%3C/svg%3E");
   font-family: var(--font-sans);
   overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--yellow);
+  color: var(--ink);
+}
+
+/* ---- Conteneur de page : colonne mobile, s'élargit sur tablette/desktop ---- */
+.zh-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 28rem;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 768px) {
+  .zh-page {
+    max-width: 46rem;
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .zh-page {
+    max-width: 72rem;
+    padding-inline: 2.5rem;
+  }
+  .zh-page-narrow {
+    max-width: 34rem;
+  }
+  .zh-page-mid {
+    max-width: 64rem;
+  }
 }
 
 /* ---- Accessibilité : anneau de focus clavier cohérent ---- */
@@ -320,6 +361,63 @@ body {
   display: none;
 }
 
+/* ---- Curseurs (création) : piste arrondie + pouce blanc bien saisissable ---- */
+.zh-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 0.85rem;
+  border-radius: 9999px;
+  background: rgba(22, 22, 22, 0.1);
+  cursor: pointer;
+}
+.zh-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.6);
+  transition: transform 0.12s ease;
+}
+.zh-range::-moz-range-thumb {
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 9999px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.6);
+}
+.zh-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.zh-range:focus-visible {
+  outline-offset: 4px;
+}
+
+/* Vignette du feed : légère avancée de la photo au survol (desktop) */
+@media (hover: hover) and (pointer: fine) {
+  .zh-card-interactive .zh-zoom-img {
+    transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .zh-card-interactive:hover .zh-zoom-img {
+    transform: scale(1.06);
+  }
+  .zh-card-interactive:hover .zh-float {
+    animation-duration: 1.6s;
+  }
+}
+
+/* En-tête desktop : verre dépoli crème */
+.zh-header {
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  box-shadow: 0 1px 0 var(--line);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse,
   .zh-skeleton,
@@ -329,6 +427,7 @@ body {
     animation: none;
   }
   .zh-card-interactive,
+  .zh-card-interactive .zh-zoom-img,
   .zh-btn,
   .zh-chip,
   .zh-icon-btn {

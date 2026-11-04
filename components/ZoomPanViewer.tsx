@@ -178,7 +178,14 @@ export default function ZoomPanViewer({ src, onTap, children, className }: Props
       // atteignable au pan (voir bornes dans apply()). Le ratio 1:1 par défaut
       // (avant que la vraie photo ne soit connue) donne au squelette de
       // chargement une hauteur stable au lieu de s'effondrer à 0.
-      style={{ aspectRatio: aspect ?? 1, maxHeight: "72dvh" }}
+      // maxWidth : quand la hauteur est plafonnée, le cadre se rétrécit aussi
+      // en largeur pour épouser la photo (pas de bandes noires sur desktop).
+      style={{
+        aspectRatio: aspect ?? 1,
+        maxHeight: "var(--zh-photo-max)",
+        maxWidth: aspect ? `calc(var(--zh-photo-max) * ${aspect})` : undefined,
+        marginInline: "auto",
+      }}
       className={`relative overflow-hidden touch-none select-none bg-neutral-900 ${className ?? ""}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

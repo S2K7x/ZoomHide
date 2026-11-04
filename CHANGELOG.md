@@ -2,6 +2,31 @@
 
 Format : une entrée par jour de routine automatisée, la plus récente en haut.
 
+## 2026-11-04
+
+**Desktop & tablet layouts, final visual polish, refreshed brand assets.**
+
+- New sticky header on tablet/desktop (≥768px): logo, labelled pill
+  navigation, private-code shortcut and player chip. Phones keep the floating
+  bottom pill.
+- Responsive page container (`.zh-page`, `-mid`, `-narrow`) replaces the fixed
+  448px column.
+- Home: two-column hero on desktop, side-by-side mode tiles, 3-column
+  "How it works".
+- Feed: 2 → 3 → 4 column grid, one-line title with subtitle, photo zoom on
+  hover.
+- Game: photo + sticky side panel on desktop with a large "Find the …" hint,
+  creator and time left. The photo frame now hugs the photo's real ratio (no
+  black bars when height-capped). On phones the result card scrolls into view
+  after a find or the last miss.
+- Create: two-column upload and placement steps, active hide beside its
+  stats; restyled range sliders (`.zh-range`) with a big white thumb.
+- Leaderboard: podium left, ranks right on desktop.
+- Fix: the 9:16 story image no longer overlaps its caption and footer with
+  portrait photos (photo height capped).
+- New logo mark (`components/Logo.tsx`), matching PWA icons, favicon and
+  Open Graph image in the current cream/playful style.
+
 ## 2026-10-26
 
 **Refonte visuelle « playground » : fond crème, typo display grasse, aplats

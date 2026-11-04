@@ -73,12 +73,11 @@ export default function PrivatePlay({ initialToken }: { initialToken?: string })
   };
 
   return (
-    <div className="px-5 pt-6 flex flex-col gap-5">
+    <div className="zh-page zh-page-narrow pt-6 md:pt-12 flex flex-col gap-5">
       <div className="flex items-start justify-between">
-        <h1 className="zh-display text-[2.8rem]">
+        <h1 className="zh-display text-[2.8rem] md:text-[3.4rem]">
           Private
-          <br />
-          Hide
+          <br className="md:hidden" /> Hide
         </h1>
         <Link href="/play" aria-label="Back to public feed" className="zh-icon-btn">
           <BackIcon size={20} />
@@ -89,7 +88,7 @@ export default function PrivatePlay({ initialToken }: { initialToken?: string })
         <Sparkle size={16} className="zh-twinkle absolute top-5 right-6 text-yellow" />
         <div className="flex items-center gap-3">
           <Mascot shape="cat" mood="wow" color="var(--yellow)" size={72} className="shrink-0" />
-          <p className="text-sm font-semibold text-white/90">
+          <p className="text-sm md:text-base font-semibold text-white/90">
             Got a 6-digit code from a friend? Enter it to unlock their hide.
           </p>
         </div>

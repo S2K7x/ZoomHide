@@ -128,7 +128,7 @@ export default function PlayFeed() {
   };
 
   const emptyState = (mood: "sad" | "wow", text: React.ReactNode, action: React.ReactNode) => (
-    <div className="zh-card text-center py-8 px-6 flex flex-col items-center gap-3">
+    <div className="zh-card text-center py-8 px-6 flex flex-col items-center gap-3 md:max-w-md md:mx-auto md:w-full md:py-12">
       <Mascot shape="bean" mood={mood} color="var(--sky)" size={96} />
       <p className="text-[var(--muted)]">{text}</p>
       {action}
@@ -136,14 +136,18 @@ export default function PlayFeed() {
   );
 
   return (
-    <div className="px-4 pt-6 flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-2">
-        <h1 className="zh-display text-[2.8rem]">
-          Find a
-          <br />
-          Hide
-        </h1>
-        <div className="flex flex-col gap-2 shrink-0 pt-1">
+    <div className="zh-page !px-4 md:!px-8 lg:!px-10 pt-6 md:pt-10 flex flex-col gap-5 md:gap-6">
+      <div className="flex items-start justify-between gap-2 md:items-end">
+        <div className="flex flex-col gap-2">
+          <h1 className="zh-display text-[2.8rem] md:text-[3.6rem]">
+            Find a
+            <br className="md:hidden" /> Hide
+          </h1>
+          <p className="hidden md:block text-[var(--muted)] text-base">
+            Pick a photo, zoom in, tap the shape. 3 tries a day on each hide.
+          </p>
+        </div>
+        <div className="flex flex-col md:flex-row gap-2 shrink-0 pt-1">
           <button
             onClick={() => fetchHides({ isManual: true })}
             disabled={loading || refreshing}
@@ -162,7 +166,7 @@ export default function PlayFeed() {
         </div>
       </div>
 
-      <div className="flex gap-2 text-sm overflow-x-auto zh-noscroll -mx-4 px-4 pb-1">
+      <div className="flex gap-2 text-sm overflow-x-auto zh-noscroll -mx-4 px-4 md:mx-0 md:px-0 pb-1">
         {SORTS.map(([k, label]) => (
           <button
             key={k}
@@ -183,8 +187,8 @@ export default function PlayFeed() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-3" aria-label="Loading hides">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5" aria-label="Loading hides">
+          {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="zh-tile bg-white p-2">
               <div className="w-full aspect-square rounded-[1.5rem] zh-skeleton" />
               <div className="p-2 flex items-center gap-2">
@@ -222,7 +226,7 @@ export default function PlayFeed() {
           </button>
         )
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
           {visibleHides.map((h, i) => (
             <Link
               key={h.id}
@@ -235,7 +239,7 @@ export default function PlayFeed() {
                 <img
                   src={h.thumbnail_url}
                   alt="Hide"
-                  className="w-full aspect-square object-cover"
+                  className="zh-zoom-img w-full aspect-square object-cover"
                   loading="lazy"
                 />
                 <span className="zh-badge absolute top-2 right-2">
@@ -264,9 +268,9 @@ export default function PlayFeed() {
                   </span>
                 ) : null}
               </div>
-              <div className="px-1.5 pt-2.5 pb-1 flex items-center gap-2 text-ink">
+              <div className="px-1.5 pt-2.5 pb-1 flex items-center gap-2 text-ink md:px-2 md:pb-1.5">
                 <Avatar name={h.creator_name} size={26} />
-                <div className="min-w-0 text-xs">
+                <div className="min-w-0 text-xs md:text-[13px]">
                   <p className="font-bold truncate">{h.creator_name}</p>
                   <p className="text-ink/65 font-medium">
                     {h.total_attempts === 0
@@ -284,7 +288,7 @@ export default function PlayFeed() {
         <button
           onClick={() => fetchHides({ loadMore: true })}
           disabled={loadingMore}
-          className="zh-btn zh-btn-primary py-3.5 text-sm disabled:opacity-50"
+          className="zh-btn zh-btn-primary py-3.5 text-sm disabled:opacity-50 md:w-72 md:mx-auto md:px-8"
         >
           {loadingMore ? "Loading…" : "Load more"}
         </button>
