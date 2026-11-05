@@ -1,0 +1,143 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="brand.css">
+<script src="brand.js"></script>
+<style>
+  html, body { width: 1080px; height: 1350px; overflow: hidden; }
+  .slide { position: relative; width: 1080px; height: 1350px; overflow: hidden; display: none; }
+  .slide.on { display: block; }
+  .abs { position: absolute; }
+  /* 3:4 safe zone = central 1012px; we keep all copy inside x 70..1010 */
+  .head { position: absolute; left: 70px; right: 70px; top: 86px; }
+  .kicker { display: inline-flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 800; }
+  .kicker .n { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 999px; background: var(--ink); color: #fff; font-family: "Bricolage Grotesque"; font-size: 36px; }
+  h2.display { font-size: 108px; margin-top: 26px; }
+  .sub { font-size: 36px; font-weight: 600; line-height: 1.35; color: rgba(22,22,22,.72); margin-top: 22px; max-width: 880px; }
+  .phone { position: absolute; background: #161616; border-radius: 78px; padding: 17px; box-shadow: 0 60px 90px -50px rgba(0,0,0,.65), inset 0 0 0 2px #2c2c2c; }
+  .phone .screen { position: relative; width: 100%; height: 100%; border-radius: 62px; overflow: hidden; }
+  .phone .screen img { display: block; width: 100%; }
+  .phone .island { position: absolute; top: 32px; left: 50%; width: 126px; height: 36px; margin-left: -63px; border-radius: 20px; background: #000; z-index: 2; }
+  .tag { position: absolute; display: inline-flex; align-items: center; gap: 12px; background: #fff; border-radius: 999px; padding: 18px 28px; font-size: 30px; font-weight: 800; box-shadow: 0 22px 40px -22px rgba(0,0,0,.55); white-space: nowrap; }
+  .foot { position: absolute; left: 70px; right: 70px; bottom: 54px; display: flex; align-items: center; justify-content: space-between; }
+  .brandchip { display: inline-flex; align-items: center; gap: 12px; background: #fff; border-radius: 999px; padding: 8px 22px 8px 8px; font-family: "Bricolage Grotesque"; font-weight: 800; font-size: 28px; letter-spacing: -0.02em; box-shadow: 0 14px 28px -18px rgba(0,0,0,.5); }
+  .dots { display: flex; gap: 10px; }
+  .dots i { width: 12px; height: 12px; border-radius: 99px; background: rgba(22,22,22,.22); }
+  .dots i.on { width: 34px; background: var(--ink); }
+  .swipe { display: inline-flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; border-radius: 999px; padding: 16px 28px; font-size: 28px; font-weight: 800; }
+  .browser { position: absolute; background: #fff; border-radius: 26px; overflow: hidden; box-shadow: 0 60px 90px -50px rgba(0,0,0,.6), 0 0 0 2px rgba(22,22,22,.08); }
+  .browser .bar { height: 44px; background: #ece7da; display: flex; align-items: center; gap: 10px; padding: 0 18px; }
+  .browser .bar i { width: 13px; height: 13px; border-radius: 99px; display: inline-block; }
+  .browser .bar .url { margin-left: 16px; flex: 1; height: 26px; border-radius: 99px; background: #fff; font-size: 15px; display: flex; align-items: center; padding-left: 14px; color: rgba(22,22,22,.55); font-weight: 600; }
+  .browser img { display: block; width: 100%; }
+</style></head>
+<body>
+
+<!-- 1 · challenge cover -->
+<section class="slide" data-n="1" style="background:#161616">
+  <img class="abs" src="img/hi211.jpg" style="inset:0; width:1080px; height:1350px">
+  <div class="abs" style="inset:0; background:linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,0) 34%, rgba(0,0,0,0) 72%, rgba(0,0,0,.5))"></div>
+  <div class="abs bubble display" style="left:50%; transform:translateX(-50%) rotate(-1.5deg); top:96px; font-size:84px; padding:28px 48px 34px; text-align:center; white-space:nowrap">There's a <span class="ringic"></span> ring<br>hidden in here.</div>
+  <div class="abs pill" style="left:50%; transform:translateX(-50%) rotate(1deg); top:372px; background:var(--yellow); font-size:40px; padding:18px 34px; white-space:nowrap">Can you find it? 👀</div>
+  <div class="foot"><span class="brandchip"><span class="lm"></span>Zoom Hide</span><span class="swipe">Swipe for the answer →</span></div>
+</section>
+
+<!-- 2 · answer -->
+<section class="slide paper" data-n="2" style="background-color:var(--teal); background-blend-mode:multiply">
+  <div class="head" style="color:#fff">
+    <h2 class="display" style="margin-top:0; font-size:120px">Found it? 🎯</h2>
+    <p class="sub" style="color:rgba(255,255,255,.85)">It was hiding between the life rings.<br>Sneaky, right?</p>
+  </div>
+  <div class="abs" style="left:110px; top:440px; width:860px; height:690px; border-radius:48px; overflow:hidden; box-shadow:0 0 0 10px #fff, 0 50px 80px -40px rgba(0,0,0,.6); transform:rotate(-1.2deg)">
+    <img id="zoomImg" class="abs" src="img/hi211.jpg" style="width:2300px; height:2875px">
+    <div id="zoomRing" class="abs" style="border:12px solid var(--yellow); border-radius:999px; box-shadow:0 0 60px 18px rgba(255,210,63,.55)"></div>
+    <span class="tag" style="left:28px; top:28px; font-size:28px; padding:14px 24px">🔍 Zoomed in 2×</span>
+  </div>
+  <div class="abs m2" style="right:40px; top:1010px"></div>
+  <div class="foot"><span class="brandchip"><span class="lm"></span>Zoom Hide</span><span class="dots"></span></div>
+</section>
+
+<!-- 3 · hide -->
+<section class="slide paper" data-n="3" style="background-color:#ffe27a">
+  <div class="head">
+    <span class="kicker"><span class="n">1</span>Hide</span>
+    <h2 class="display">Blend a shape<br>into your photo.</h2>
+  </div>
+  <div class="phone" style="left:300px; top:520px; width:520px; height:1100px; transform:rotate(-3deg)"><div class="island"></div><div class="screen"><img src="plates/07-place-shape-mobile.png"></div></div>
+  <span class="tag" style="left:70px; top:640px; transform:rotate(-4deg)">📸 Real photo</span>
+  <span class="tag" style="left:70px; top:780px; transform:rotate(3deg)">❤️ 10 shapes</span>
+  <span class="tag" style="left:640px; top:900px; transform:rotate(4deg)">🎨 Steal a color</span>
+  <div class="foot"><span></span><span class="dots"></span></div>
+</section>
+
+<!-- 4 · find -->
+<section class="slide paper" data-n="4" style="background-color:var(--sky)">
+  <div class="head">
+    <span class="kicker"><span class="n">2</span>Find</span>
+    <h2 class="display">Friends zoom in<br>to spot it.</h2>
+  </div>
+  <div class="phone" style="left:280px; top:520px; width:520px; height:1100px; transform:rotate(3deg)"><div class="island"></div><div class="screen"><img src="plates/03-game-mobile.png"></div></div>
+  <span class="tag" style="left:60px; top:690px; transform:rotate(-4deg)">🔎 Pinch to zoom</span>
+  <span class="tag" style="left:650px; top:820px; transform:rotate(4deg); background:var(--purple); color:#fff">♨️ Hot or cold hints</span>
+  <span class="tag" style="left:60px; top:960px; transform:rotate(-2deg)">🎯 3 tries a day</span>
+  <div class="foot"><span></span><span class="dots"></span></div>
+</section>
+
+<!-- 5 · win -->
+<section class="slide paper" data-n="5" style="background-color:#c5ecbd">
+  <div class="head">
+    <span class="kicker"><span class="n">3</span>Win</span>
+    <h2 class="display">Fast finders and<br>sneaky hiders score.</h2>
+  </div>
+  <div class="phone" style="left:110px; top:540px; width:500px; height:1060px; transform:rotate(-3deg)"><div class="island"></div><div class="screen"><img src="plates/10-leaderboard-mobile.png"></div></div>
+  <div class="abs" style="left:650px; top:600px; width:330px; border-radius:30px; overflow:hidden; transform:rotate(5deg); box-shadow:0 0 0 9px #fff, 0 40px 70px -30px rgba(0,0,0,.6)"><img src="plates/12-story-share-image.png" style="display:block; width:100%"></div>
+  <span class="tag" style="left:600px; top:1180px; transform:rotate(-3deg)">💎 Perfect Hide bonus</span>
+  <div class="abs" style="left:880px; top:520px; font-size:100px; transform:rotate(18deg)">👑</div>
+  <div class="foot"><span></span><span class="dots"></span></div>
+</section>
+
+<!-- 6 · anywhere -->
+<section class="slide paper" data-n="6" style="background-color:var(--orange)">
+  <div class="head">
+    <h2 class="display" style="margin-top:0">Phone or<br>desktop.</h2>
+    <p class="sub" style="color:rgba(22,22,22,.78)">Plays in any browser. Nothing to install,<br>no account needed.</p>
+  </div>
+  <div class="browser" style="left:70px; top:560px; width:880px; transform:rotate(-2deg)"><div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="url">zoom-hide.vercel.app/play</span></div><img src="plates/02-feed-desktop.png"></div>
+  <div class="phone" style="left:690px; top:780px; width:300px; height:640px; padding:11px; border-radius:48px; transform:rotate(5deg)"><div class="screen" style="border-radius:38px"><img src="plates/01-home-mobile.png"></div></div>
+  <div class="foot"><span></span><span class="dots"></span></div>
+</section>
+
+<!-- 7 · CTA -->
+<section class="slide paper" data-n="7" style="background-color:var(--yellow)">
+  <div class="abs lmbig" style="left:50%; transform:translateX(-50%) rotate(-6deg); top:110px"></div>
+  <h2 class="abs display" style="left:0; right:0; top:330px; text-align:center; font-size:136px; margin:0">Your turn.<br>Hide something<br>sneaky.</h2>
+  <div class="abs pill btn-ink" style="left:50%; transform:translateX(-50%); top:800px; font-size:44px; padding:28px 50px; white-space:nowrap">Play free → link in bio</div>
+  <p class="abs" style="left:0; right:0; top:930px; text-align:center; font-size:34px; font-weight:700; line-height:1.45; color:rgba(22,22,22,.75)">🔖 Save this for later<br>📤 Send it to the friend who never finds anything</p>
+  <div class="abs c1" style="left:60px; top:1070px"></div>
+  <div class="abs c2" style="left:380px; top:1110px"></div>
+  <div class="abs c3" style="left:700px; top:1075px"></div>
+</section>
+
+<script>
+const B = window.BRAND;
+const TOTAL = 7;
+const n = +(location.hash.slice(1) || 1);
+document.querySelector(`.slide[data-n="${n}"]`).classList.add("on");
+document.querySelectorAll(".dots").forEach((d) => { d.innerHTML = Array.from({ length: TOTAL }, (_, i) => `<i class="${i + 1 === n ? "on" : ""}"></i>`).join(""); });
+document.querySelectorAll(".lm").forEach((e) => (e.innerHTML = B.logoMark(46)));
+document.querySelectorAll(".lmbig").forEach((e) => (e.innerHTML = B.logoMark(170).replace('fill="#ffd23f"', 'fill="#fff"')));
+document.querySelectorAll(".ringic").forEach((e) => (e.innerHTML = B.shape("ring", "#f2a33a", 74, "vertical-align:-8px")));
+document.querySelectorAll(".m2").forEach((e) => (e.innerHTML = B.mascot("bean", "happy", "#ffd23f", 230)));
+const c = [["c1", "cat", "happy", "#ff5f9e"], ["c2", "bean", "wow", "#77c4f1"], ["c3", "blob", "smirk", "#8a5cf6"]];
+c.forEach(([cl, s, m, col]) => document.querySelectorAll("." + cl).forEach((e) => (e.innerHTML = B.mascot(s, m, col, 320))));
+// answer slide: zoom crop centred on the ring (63%, 58%) of the 2300x2875 image
+const zi = document.getElementById("zoomImg");
+if (zi) {
+  const W = 2300, H = 2875, fw = 860, fh = 690, rx = 0.63 * W, ry = 0.58 * H;
+  const cx = fw * 0.55, cy = fh * 0.52;
+  zi.style.left = cx - rx + "px"; zi.style.top = cy - ry + "px";
+  const r = 0.08 * W * 0.85;
+  const ring = document.getElementById("zoomRing");
+  ring.style.width = ring.style.height = r * 2 + "px"; ring.style.left = cx - r + "px"; ring.style.top = cy - r + "px";
+}
+</script>
+</body></html>

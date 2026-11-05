@@ -1,0 +1,338 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="brand.css">
+<script src="brand.js"></script>
+<style>
+  html, body { width: 1080px; height: 1920px; overflow: hidden; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+  .scene { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+  .abs { position: absolute; }
+  .center-x { left: 50%; }
+  /* phone */
+  .phone { position: absolute; background: #161616; border-radius: 74px; padding: 16px; box-shadow: 0 60px 90px -50px rgba(0,0,0,.7), inset 0 0 0 2px #2c2c2c; }
+  .phone .screen { position: relative; width: 100%; height: 100%; border-radius: 58px; overflow: hidden; background: var(--bg); }
+  .phone .screen img.plate { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .phone .island { position: absolute; top: 30px; left: 50%; width: 120px; height: 34px; margin-left: -60px; border-radius: 20px; background: #000; z-index: 5; }
+  .head { position: absolute; left: 0; right: 0; top: 230px; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+  .num { display: inline-grid; place-items: center; width: 92px; height: 92px; border-radius: 999px; font-size: 54px; }
+  .title { font-size: 112px; }
+  .cap { font-size: 40px; font-weight: 600; color: rgba(22,22,22,.7); line-height: 1.25; }
+  .tapring { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 999px; border: 5px solid #fff; background: rgba(15,157,132,.35); box-shadow: 0 0 0 3px rgba(0,0,0,.25); }
+  .finger { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 999px; background: rgba(255,255,255,.55); border: 4px solid rgba(255,255,255,.95); box-shadow: 0 10px 24px -8px rgba(0,0,0,.5); }
+  .browser { position: absolute; background: #fff; border-radius: 28px; overflow: hidden; box-shadow: 0 60px 90px -50px rgba(0,0,0,.6), 0 0 0 2px rgba(22,22,22,.08); }
+  .browser .bar { height: 44px; background: #ece7da; display: flex; align-items: center; gap: 10px; padding: 0 18px; }
+  .browser .bar i { width: 13px; height: 13px; border-radius: 99px; display: inline-block; }
+  .browser .bar .url { margin-left: 16px; flex: 1; height: 26px; border-radius: 99px; background: #fff; font-size: 15px; display: flex; align-items: center; padding-left: 14px; color: rgba(22,22,22,.55); font-weight: 600; }
+  .browser img { display: block; width: 100%; }
+  .pillbig { font-size: 46px; padding: 26px 46px; }
+</style></head>
+<body>
+<div id="stage">
+
+  <!-- S1/S2 : hook + zoom -->
+  <section class="scene" id="s1" style="background:#161616">
+    <div id="hookImgWrap" class="abs" style="inset:0; overflow:hidden">
+      <img id="hookImg" src="img/hook163.jpg" class="abs" style="height:1920px; width:1536px; left:-228px; top:0; transform-origin: 0 0">
+    </div>
+    <div id="hookShade" class="abs" style="inset:0; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,.35))"></div>
+    <div id="hookRing" class="abs" style="border:10px solid var(--yellow); border-radius:999px; box-shadow:0 0 60px 20px rgba(255,210,63,.55)"></div>
+    <div id="hookT1" class="abs bubble display" style="top:250px; left:50%; font-size:84px; padding:26px 44px 32px; text-align:center; white-space:nowrap">There's a <span id="starInline"></span> hidden<br>in this photo.</div>
+    <div id="hookT2" class="abs pill btn-ink" style="top:540px; left:50%; font-size:48px; padding:22px 40px; white-space:nowrap">Can you spot it? 👀</div>
+    <div id="hookTimer" class="abs" style="top:660px; left:50%; display:flex; gap:16px"></div>
+    <div id="hookFound" class="abs pill" style="top:300px; left:50%; font-size:76px; padding:26px 54px; background:var(--teal); color:#fff; white-space:nowrap" ><span class="display">Found it!</span> 🎉</div>
+    <div id="hookMascot" class="abs" style="left:50%; bottom:330px"></div>
+  </section>
+
+  <!-- S3 : title -->
+  <section class="scene paper" id="s3">
+    <div id="tLogo" class="abs" style="left:50%; top:420px"></div>
+    <div id="tName" class="abs display" style="left:50%; top:700px; font-size:168px; white-space:nowrap">Zoom Hide</div>
+    <div id="tTag" class="abs" style="left:50%; top:900px; font-size:52px; font-weight:700; white-space:nowrap; color:rgba(22,22,22,.72)">Hide-and-seek for your photos.</div>
+    <div id="tM1" class="abs" style="left:110px; top:1160px"></div>
+    <div id="tM2" class="abs" style="left:400px; top:1110px"></div>
+    <div id="tM3" class="abs" style="left:690px; top:1170px"></div>
+    <div id="tSp1" class="abs" style="left:150px; top:380px"></div>
+    <div id="tSp2" class="abs" style="left:880px; top:560px"></div>
+    <div id="tSp3" class="abs" style="left:820px; top:1050px"></div>
+  </section>
+
+  <!-- S4 : hide -->
+  <section class="scene paper" id="s4" style="background-color:#fbf3d6">
+    <div class="head" id="h4"><div style="display:flex; align-items:center; gap:24px"><span class="num display" style="background:var(--yellow)">1</span><span class="title display">Hide</span></div>
+      <p class="cap">Snap a photo. Blend a shape in.</p></div>
+    <div class="phone" id="ph4"><div class="island"></div><div class="screen">
+      <img class="plate" src="plates/place.png">
+      <div id="heart" class="abs" style="transform-origin:50% 50%"></div>
+      <div id="finger4" class="finger"></div>
+    </div></div>
+  </section>
+
+  <!-- S5 : find -->
+  <section class="scene" id="s5" style="background:var(--sky)">
+    <div class="head" id="h5"><div style="display:flex; align-items:center; gap:24px"><span class="num display" style="background:var(--pink)">2</span><span class="title display">Find</span></div>
+      <p class="cap">Friends zoom in. 3 tries a day.</p></div>
+    <div class="phone" id="ph5"><div class="island"></div><div class="screen">
+      <img class="plate" id="g0" src="plates/game-clean.png">
+      <img class="plate" id="g1" src="plates/game-cold.png">
+      <img class="plate" id="g2" src="plates/game-hot.png">
+      <img class="plate" id="g3" src="plates/game-found-top.png">
+      <div id="tap5" class="tapring"></div>
+      <div id="finger5" class="finger"></div>
+    </div></div>
+    <div id="heat" class="abs pill" style="font-size:40px; padding:20px 34px; background:#fff; white-space:nowrap; box-shadow:0 20px 40px -20px rgba(0,0,0,.5)"></div>
+  </section>
+
+  <!-- S6 : win -->
+  <section class="scene paper" id="s6">
+    <div class="head" id="h6"><div style="display:flex; align-items:center; gap:24px"><span class="num display" style="background:var(--lime)">3</span><span class="title display">Win</span></div>
+      <p class="cap">Climb the weekly ranks.<br>Share every find.</p></div>
+    <div class="phone" id="ph6"><div class="island"></div><div class="screen"><img class="plate" src="plates/10-leaderboard-mobile.png"></div></div>
+    <div id="story6" class="abs" style="width:330px; border-radius:30px; overflow:hidden; box-shadow:0 0 0 8px #fff, 0 40px 70px -30px rgba(0,0,0,.6)"><img src="plates/12-story-share-image.png" style="display:block; width:100%"></div>
+    <div id="crown6" class="abs" style="font-size:110px">👑</div>
+  </section>
+
+  <!-- S7 : everywhere -->
+  <section class="scene" id="s7" style="background:var(--orange)">
+    <div class="head" id="h7"><span class="title display" style="font-size:100px">Phone or desktop.</span>
+      <p class="cap" style="color:rgba(22,22,22,.78)">Plays in any browser.<br>Nothing to install.</p></div>
+    <div class="browser" id="br7"><div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span class="url">zoom-hide.vercel.app/play</span></div><img src="plates/02-feed-desktop.png"></div>
+    <div class="phone" id="ph7"><div class="island"></div><div class="screen"><img class="plate" src="plates/01-home-mobile.png"></div></div>
+  </section>
+
+  <!-- S8 : CTA -->
+  <section class="scene" id="s8" style="background:var(--yellow)">
+    <div id="cLogo" class="abs" style="left:50%; top:300px"></div>
+    <div id="cT" class="abs display" style="left:50%; top:520px; font-size:150px; text-align:center; white-space:nowrap">Can you<br>find it?</div>
+    <div id="cSub" class="abs" style="left:50%; top:860px; font-size:46px; font-weight:700; white-space:nowrap; color:rgba(22,22,22,.75)">Hide one. Find them all.</div>
+    <div id="cBtn" class="abs pill btn-ink pillbig" style="left:50%; top:980px; white-space:nowrap">Play free → zoom-hide.vercel.app</div>
+    <div id="cBio" class="abs" style="left:50%; top:1130px; font-size:38px; font-weight:800; white-space:nowrap">🔗 Link in bio</div>
+    <div id="cM1" class="abs" style="left:60px; top:1250px"></div>
+    <div id="cM2" class="abs" style="left:620px; top:1230px"></div>
+    <div id="cSp1" class="abs" style="left:130px; top:240px"></div>
+    <div id="cSp2" class="abs" style="left:900px; top:420px"></div>
+  </section>
+</div>
+
+<script>
+const B = window.BRAND;
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eOut = (x) => 1 - Math.pow(1 - x, 3);
+const eInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const eBack = (x) => { const c1 = 1.70158, c3 = c1 + 1; return x <= 0 ? 0 : 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+// pop-in: scale from 0 with overshoot + fade
+const pop = (el, t, at, dur = 0.45, extra = "", cx = true) => {
+  const p = prog(t, at, at + dur);
+  el.style.opacity = p > 0 ? Math.min(1, p * 3) : 0;
+  el.style.transform = `${cx ? "translateX(-50%) " : ""}${extra} scale(${eBack(p)})`;
+};
+const rise = (el, t, at, dur = 0.5, dy = 60, cx = true) => {
+  const p = eOut(prog(t, at, at + dur));
+  el.style.opacity = p;
+  el.style.transform = `${cx ? "translateX(-50%) " : ""}translateY(${(1 - p) * dy}px)`;
+};
+const outFade = (el, t, at, dur = 0.3) => { const p = prog(t, at, at + dur); if (p > 0) el.style.opacity = String(Math.min(+el.style.opacity || 1, 1 - p)); };
+
+// scene list with circle-wipe reveals
+const SC = [
+  { id: "s1", a: 0, b: 6.6 },
+  { id: "s3", a: 6.3, b: 9.7, wipe: [540, 1100] },
+  { id: "s4", a: 9.4, b: 13.9, wipe: [540, 960], bg: true },
+  { id: "s5", a: 13.6, b: 18.2, wipe: [540, 960] },
+  { id: "s6", a: 17.9, b: 21.7, wipe: [540, 960] },
+  { id: "s7", a: 21.4, b: 24.6, wipe: [540, 960] },
+  { id: "s8", a: 24.3, b: 30, wipe: [540, 1100] },
+];
+SC.forEach((s, i) => ($(s.id).style.zIndex = i + 1));
+
+// static content
+$("starInline").innerHTML = B.shape("star", "#ffd23f", 70, "vertical-align:-6px; filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))");
+for (let i = 0; i < 3; i++) $("hookTimer").innerHTML += `<span class="tdot" style="width:26px;height:26px;border-radius:99px;background:#fff;display:inline-block"></span>`;
+$("hookMascot").innerHTML = B.mascot("bean", "happy", "#77c4f1", 300);
+$("tLogo").innerHTML = B.logoMark(230);
+$("tM1").innerHTML = B.mascot("cat", "wow", "#ff5f9e", 280);
+$("tM2").innerHTML = B.mascot("blob", "smirk", "#8a5cf6", 300);
+$("tM3").innerHTML = B.mascot("bean", "happy", "#ffd23f", 280);
+$("tSp1").innerHTML = B.sparkle(60, "#ffd23f"); $("tSp2").innerHTML = B.sparkle(44, "#ff5f9e"); $("tSp3").innerHTML = B.sparkle(36, "#0f9d84");
+$("cLogo").innerHTML = B.logoMark(170).replace('fill="#ffd23f"', 'fill="#fff"');
+$("cM1").innerHTML = B.mascot("cat", "happy", "#ff5f9e", 380);
+$("cM2").innerHTML = B.mascot("blob", "wow", "#8a5cf6", 400);
+$("cSp1").innerHTML = B.sparkle(64, "#fff"); $("cSp2").innerHTML = B.sparkle(48, "#fff");
+
+// phone geometry: screen 470 wide, ratio 390:844
+const PW = 540, K = PW / 390, PH = Math.round(PW * 844 / 390);
+const META = __META__;
+document.querySelectorAll(".phone").forEach((p) => { p.style.width = PW + 32 + "px"; p.style.height = PH + 32 + "px"; });
+const placePhone = (el, x, y, rot = 0, s = 1) => { el.style.left = x + "px"; el.style.top = y + "px"; el.style.transform = `rotate(${rot}deg) scale(${s})`; };
+// screen-space position of a % point in a plate photo
+const ptIn = (photo, xp, yp) => ({ x: (photo.x + photo.width * xp / 100) * K, y: (photo.y + photo.height * yp / 100) * K });
+
+$("heart").innerHTML = B.shape("heart", META.place.color, 100);
+
+function render(t) {
+  SC.forEach((s) => {
+    const el = $(s.id);
+    const vis = t >= s.a && t < s.b;
+    el.style.visibility = vis ? "visible" : "hidden";
+    if (vis && s.wipe) {
+      const r = eInOut(prog(t, s.a, s.a + 0.5)) * 2300;
+      el.style.clipPath = `circle(${r}px at ${s.wipe[0]}px ${s.wipe[1]}px)`;
+    }
+  });
+
+  // ---- S1 hook + S2 zoom (0 → 6.6)
+  {
+    const img = $("hookImg");
+    // star in hook image coords
+    // star in image-local px (img is 1536x1920, laid out at left -228)
+    const lx = 0.74 * 1536, ly = 0.31 * 1920;
+    const sx = -228 + lx, sy = ly; // natural stage position
+    const z1 = lerp(1, 1.06, prog(t, 0, 3.2));
+    const zp = eInOut(prog(t, 3.2, 5.0));
+    const z = lerp(z1, 2.7, zp);
+    // the star glides toward the screen centre while we zoom in on it
+    const cx = lerp(sx, 540, zp), cy = lerp(sy, 1000, zp);
+    img.style.transform = `translate(${cx + 228 - lx * z}px, ${cy - ly * z}px) scale(${z})`;
+    // star in stage coords after transform -> star stage pos = (cx, cy) ; img-local star x = 0.74*1536
+    const ringP = prog(t, 5.0, 5.4);
+    const rr = 1536 * 0.08 * z * 0.85;
+    const ring = $("hookRing");
+    ring.style.width = ring.style.height = rr * 2 + "px";
+    ring.style.left = cx - rr + "px"; ring.style.top = cy - rr + "px";
+    ring.style.opacity = ringP > 0 ? 1 : 0;
+    ring.style.transform = `scale(${eBack(ringP)})`;
+    // texts
+    pop($("hookT1"), t, 0.15, 0.5);
+    pop($("hookT2"), t, 1.0, 0.45);
+    if (t > 2.9) { $("hookT1").style.opacity = 1 - prog(t, 2.9, 3.25); $("hookT2").style.opacity = 1 - prog(t, 2.9, 3.25); }
+    const dots = document.querySelectorAll(".tdot");
+    $("hookTimer").style.transform = "translateX(-50%)";
+    $("hookTimer").style.opacity = t < 1.4 ? 0 : 1 - prog(t, 2.9, 3.25);
+    dots.forEach((d, i) => { const on = t > 1.5 + i * 0.45; d.style.background = on ? "#ffd23f" : "rgba(255,255,255,.6)"; d.style.transform = `scale(${on ? 1 + 0.4 * (1 - prog(t, 1.5 + i * 0.45, 1.75 + i * 0.45)) : 1})`; });
+    pop($("hookFound"), t, 5.25, 0.45);
+    const mp = eBack(prog(t, 5.45, 5.95));
+    $("hookMascot").style.transform = `translateX(-50%) translateY(${(1 - mp) * 900}px) rotate(${Math.sin(t * 6) * 4}deg)`;
+  }
+
+  // ---- S3 title (6.3 → 9.7)
+  {
+    pop($("tLogo"), t, 6.55, 0.55, `rotate(${lerp(-20, 0, eOut(prog(t, 6.55, 7.1)))}deg)`);
+    rise($("tName"), t, 6.85, 0.5, 80);
+    rise($("tTag"), t, 7.15, 0.5, 60);
+    [["tM1", 7.3], ["tM2", 7.45], ["tM3", 7.6]].forEach(([id, at], i) => {
+      const p = eBack(prog(t, at, at + 0.55));
+      $(id).style.transform = `translateY(${(1 - p) * 700 + Math.sin((t - at) * 5 + i) * 10}px) rotate(${Math.sin((t - at) * 3 + i) * 4}deg)`;
+    });
+    ["tSp1", "tSp2", "tSp3"].forEach((id, i) => { const s = 0.7 + 0.35 * Math.sin(t * 4 + i * 2); $(id).style.transform = `scale(${s * eOut(prog(t, 6.6 + i * 0.15, 7.1 + i * 0.15))})`; });
+  }
+
+  // ---- S4 hide (9.4 → 13.9)
+  {
+    rise($("h4"), t, 9.45, 0.45, 50, false);
+    const pp = eOut(prog(t, 9.4, 10.0));
+    placePhone($("ph4"), 540 - (PW + 32) / 2, lerp(1950, 500, pp), lerp(6, 0, pp));
+    const ph = META.place.photo;
+    const d = eInOut(prog(t, 10.7, 12.0));
+    const start = ptIn(ph, 52, 42), end = ptIn(ph, 30, 74);
+    const hx = lerp(start.x, end.x, d), hy = lerp(start.y, end.y, d);
+    const sizePx = ph.width * K * 0.10;
+    const h = $("heart");
+    const hp = eBack(prog(t, 10.3, 10.65));
+    h.style.width = h.style.height = sizePx + "px";
+    h.firstChild.setAttribute("width", sizePx); h.firstChild.setAttribute("height", sizePx);
+    h.style.left = hx - sizePx / 2 + "px"; h.style.top = hy - sizePx / 2 + "px";
+    const settle = prog(t, 12.0, 12.4);
+    h.style.transform = `rotate(${lerp(0, -15, d)}deg) scale(${hp * (1 + 0.12 * Math.sin(settle * Math.PI))})`;
+    h.style.opacity = hp > 0 ? 1 : 0;
+    const f = $("finger4");
+    const fOn = prog(t, 10.55, 10.75) * (1 - prog(t, 12.2, 12.5));
+    f.style.opacity = fOn; f.style.left = hx + sizePx * 0.75 + "px"; f.style.top = hy + sizePx * 0.95 + "px";
+  }
+
+  // ---- S5 find (13.6 → 18.2)
+  {
+    rise($("h5"), t, 13.85, 0.45, 50, false);
+    const pp = eOut(prog(t, 13.8, 14.4));
+    const px = 540 - (PW + 32) / 2, py = lerp(1950, 500, pp);
+    placePhone($("ph5"), px, py, lerp(-6, 0, pp));
+    const g = META.game.photo, tg = META.game.target;
+    const taps = [[20, 30, 14.9], [tg.x - 15, tg.y + 8, 15.9], [tg.x, tg.y, 16.9]];
+    $("g1").style.opacity = prog(t, 15.15, 15.3);
+    $("g2").style.opacity = prog(t, 16.15, 16.3);
+    $("g3").style.opacity = prog(t, 17.15, 17.35);
+    const f = $("finger5"), r = $("tap5");
+    let fx = ptIn(g, 50, 70).x, fy = ptIn(g, 50, 70).y, ring = 0;
+    for (let i = 0; i < taps.length; i++) {
+      const [x, y, at] = taps[i];
+      const p = ptIn(g, x, y);
+      const prev = i ? ptIn(g, taps[i - 1][0], taps[i - 1][1]) : { x: fx, y: fy };
+      const m = eInOut(prog(t, at - 0.5, at - 0.05));
+      if (t >= at - 0.5) { fx = lerp(prev.x, p.x, m); fy = lerp(prev.y, p.y, m); }
+      if (t >= at && t < at + 0.6) { ring = prog(t, at, at + 0.25); r.style.left = p.x + "px"; r.style.top = p.y + "px"; }
+    }
+    f.style.left = fx + 30 + "px"; f.style.top = fy + 40 + "px";
+    f.style.opacity = prog(t, 14.4, 14.6) * (1 - prog(t, 17.0, 17.2));
+    const press = taps.some(([, , at]) => t >= at && t < at + 0.15);
+    f.style.transform = `scale(${press ? 0.82 : 1})`;
+    r.style.opacity = ring > 0 && ring < 1 ? 1 : ring >= 1 ? 1 - prog(t, 0, 0) : 0;
+    r.style.transform = `scale(${0.4 + ring * 0.8})`;
+    if (!taps.some(([, , at]) => t >= at && t < at + 0.6)) r.style.opacity = 0;
+    // heat chip outside the phone
+    const heat = $("heat");
+    const msg = t < 15.3 ? "" : t < 16.3 ? "🧊 Cold, look elsewhere." : t < 17.3 ? "♨️ Hot, getting warmer." : "🎯 Found it!";
+    if (heat.textContent !== msg) heat.textContent = msg;
+    const at = t < 16.3 ? 15.3 : t < 17.3 ? 16.3 : 17.3;
+    heat.style.left = "540px"; heat.style.top = "1250px";
+    heat.style.background = t < 16.3 ? "#fff" : t < 17.3 ? "#8a5cf6" : "#0f9d84";
+    heat.style.color = t < 16.3 ? "#161616" : "#fff";
+    heat.style.opacity = msg ? 1 : 0;
+    heat.style.transform = `translateX(-50%) scale(${eBack(prog(t, at, at + 0.35))})`;
+  }
+
+  // ---- S6 win (17.9 → 21.7)
+  {
+    rise($("h6"), t, 18.15, 0.45, 50, false);
+    const pp = eOut(prog(t, 18.1, 18.7));
+    placePhone($("ph6"), 540 - (PW + 32) / 2 - 130, lerp(1950, 560, pp), lerp(6, -3, pp));
+    const sp = eBack(prog(t, 18.6, 19.15));
+    const s = $("story6");
+    s.style.left = "660px"; s.style.top = "880px"; s.style.opacity = sp > 0 ? 1 : 0;
+    s.style.transform = `translateX(${(1 - sp) * 500}px) rotate(${lerp(14, 6, sp)}deg)`;
+    const cp = eBack(prog(t, 19.2, 19.6));
+    const c = $("crown6"); c.style.left = "800px"; c.style.top = "750px"; c.style.opacity = cp > 0 ? 1 : 0;
+    c.style.transform = `rotate(${18 + Math.sin(t * 5) * 6}deg) scale(${cp})`;
+  }
+
+  // ---- S7 everywhere (21.4 → 24.6)
+  {
+    rise($("h7"), t, 21.65, 0.45, 50, false);
+    const bp = eOut(prog(t, 21.6, 22.2));
+    const br = $("br7"); br.style.width = "900px"; br.style.left = "90px"; br.style.top = lerp(1950, 640, bp) + "px";
+    br.style.transform = `rotate(${lerp(-4, -2, bp)}deg)`;
+    const pp = eBack(prog(t, 22.1, 22.7));
+    placePhone($("ph7"), 620, lerp(1950, 860, pp), lerp(10, 4, pp), 0.74);
+    $("ph7").style.transformOrigin = "0 0";
+  }
+
+  // ---- S8 CTA (24.3 → end)
+  {
+    pop($("cLogo"), t, 24.55, 0.5, `rotate(${Math.sin(t * 2) * 4}deg)`);
+    rise($("cT"), t, 24.75, 0.5, 80);
+    rise($("cSub"), t, 25.05, 0.45, 50);
+    pop($("cBtn"), t, 25.35, 0.5);
+    const bt = $("cBtn"); if (t > 26.2) bt.style.transform = `translateX(-50%) scale(${1 + 0.035 * Math.sin((t - 26.2) * 5)})`;
+    rise($("cBio"), t, 25.7, 0.45, 40);
+    [["cM1", 25.6, 0], ["cM2", 25.8, 1]].forEach(([id, at, i]) => {
+      const p = eBack(prog(t, at, at + 0.55));
+      $(id).style.transform = `translateY(${(1 - p) * 800 + Math.sin((t - at) * 4 + i) * 12}px) rotate(${(i ? -1 : 1) * 6 + Math.sin(t * 3 + i) * 3}deg)`;
+    });
+    ["cSp1", "cSp2"].forEach((id, i) => { $(id).style.transform = `scale(${(0.75 + 0.3 * Math.sin(t * 4 + i * 2)) * eOut(prog(t, 24.6, 25))})`; });
+  }
+}
+window.render = render;
+window.DURATION = 28.5;
+render(+(location.hash.slice(1) || 0));
+</script>
+</body></html>

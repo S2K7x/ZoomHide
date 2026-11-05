@@ -105,6 +105,11 @@ export default function HideGame({
   const [name, setName] = useState("");
   const [timeMs, setTimeMs] = useState(0);
   const startTime = useRef(Date.now());
+  // horloge figée au montage : suffit pour l'étiquette « N days left »
+  const [mountedAt] = useState(() => Date.now());
+  // carte de résultat (trouvé / plus d'essais) : ramenée à l'écran sur mobile,
+  // où elle tombe sous la photo, hors du champ de vision
+  const resultRef = useRef<HTMLDivElement>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportSubmitting, setReportSubmitting] = useState(false);
@@ -135,6 +140,17 @@ export default function HideGame({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [showReport, reportSubmitting, closeReport]);
+
+  const isOver = !!result && (!!result.success || result.attempts_left === 0);
+  useEffect(() => {
+    if (!isOver || !resultRef.current) return;
+    const el = resultRef.current;
+    const r = el.getBoundingClientRect();
+    if (r.top > window.innerHeight - 120 || r.bottom > window.innerHeight) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    }
+  }, [isOver]);
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.rpc("get_hide_detail", {
@@ -277,9 +293,13 @@ export default function HideGame({
     ? `No attempts left today.${reveal ? " The shape is now circled on the photo." : " Come back tomorrow!"}`
     : `${feedback ? `${feedback} ` : ""}${attemptsLeft} ${attemptsLeft > 1 ? "attempts" : "attempt"} left today.`;
 
+  const shapeName = getShape(detail.sticker_id).name;
+  const hoursLeft = Math.max(0, (new Date(detail.expires_at).getTime() - mountedAt) / 3600000);
+  const timeLeftLabel = hoursLeft >= 24 ? `${Math.ceil(hoursLeft / 24)} days left` : `${Math.ceil(hoursLeft)}h left`;
+
   return (
-    <div className="flex flex-col gap-4 pt-5">
-      <div className="px-4 flex items-center justify-between gap-2">
+    <div className="zh-page !px-0 md:!px-8 lg:!px-10 flex flex-col gap-4 pt-5 md:pt-8 lg:gap-6">
+      <div className="px-4 md:px-0 flex items-center justify-between gap-2 lg:hidden">
         {/* Lien icône seule : la flèche n'a pas de nom accessible, d'où
             l'`aria-label` construit sur la destination. */}
         <Link href={backHref} aria-label={`Back to ${backLabel}`} className="zh-icon-btn shrink-0">
@@ -297,7 +317,7 @@ export default function HideGame({
             />
           </span>
           <span className="text-[var(--muted)] shrink-0">Find the</span>
-          <span className="font-bold truncate">{getShape(detail.sticker_id).name}</span>
+          <span className="font-bold truncate">{shapeName}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs font-semibold shrink-0">
           <Avatar name={detail.creator_name} size={28} />
@@ -305,11 +325,11 @@ export default function HideGame({
         </div>
       </div>
 
-      <div className="px-4">
-        <div className="overflow-hidden rounded-[2rem] ring-[5px] ring-white shadow-[0_20px_40px_-24px_rgba(0,0,0,0.6)]">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-8 lg:items-start">
+      <div className="px-4 md:px-0">
           <ZoomPanViewer
             src={detail.photo_url}
-            className="w-full"
+            className="w-full rounded-[2rem] ring-[5px] ring-white shadow-[0_20px_40px_-24px_rgba(0,0,0,0.6)]"
             onTap={(x, y) => {
               if (!gameOver && attemptsLeft > 0) setMarker({ x, y });
             }}
@@ -341,13 +361,37 @@ export default function HideGame({
               />
             )}
           </ZoomPanViewer>
-        </div>
       </div>
 
-      <div className="px-4 flex flex-col gap-3 pb-6">
+      <div className="px-4 md:px-0 flex flex-col gap-3 pb-6 lg:sticky lg:top-24 lg:pb-0">
+        {/* Desktop : la consigne passe dans le panneau, en grand */}
+        <div className="hidden lg:flex flex-col gap-4">
+          <Link href={backHref} className="zh-btn zh-btn-ghost w-fit px-4 py-2 text-sm">
+            <BackIcon size={16} /> Back to {backLabel}
+          </Link>
+          <div className="zh-card p-5 flex items-center gap-4">
+            <span className="grid place-items-center w-[4.5rem] h-[4.5rem] rounded-[1.4rem] bg-yellow shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={shapeDataUrl(detail.sticker_id, HINT_COLOR)} alt="" className="w-10 h-10" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[var(--muted)]">Find the</p>
+              <p className="zh-display text-[2.2rem] truncate">{shapeName}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 px-1 text-sm">
+            <Avatar name={detail.creator_name} size={32} />
+            <p className="min-w-0 flex-1 truncate">
+              <span className="text-[var(--muted)]">Hidden by </span>
+              <b>{detail.creator_name}</b>
+            </p>
+            <span className="zh-badge !text-xs !py-1 !px-2.5 shrink-0">⏳ {timeLeftLabel}</span>
+          </div>
+        </div>
         <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
           {liveMessage}
         </p>
+        <div ref={resultRef} className="scroll-mt-6">
         {detail.is_creator ? (
           <div className="zh-tile bg-yellow p-5 flex items-center gap-4">
             <Mascot shape="cat" mood="smirk" color="var(--orange)" size={76} className="shrink-0" />
@@ -373,7 +417,7 @@ export default function HideGame({
                 stickerId={detail.sticker_id}
                 color={color}
                 headline={`Found in ${Math.round(timeMs / 1000)}s!`}
-                subline={`${getShape(detail.sticker_id).name} shape busted 🔎`}
+                subline={`${shapeName} shape busted 🔎`}
               />
             )}
           </div>
@@ -418,7 +462,8 @@ export default function HideGame({
               </p>
             ) : (
               <p className="text-center text-sm text-[var(--muted)]">
-                Pinch or scroll to zoom · tap where it hides
+                <span className="lg:hidden">Pinch or scroll to zoom · tap where it hides</span>
+                <span className="hidden lg:inline">Scroll to zoom · drag to pan · click where it hides</span>
               </p>
             )}
             {pastAttempts.length > 0 && (
@@ -452,6 +497,7 @@ export default function HideGame({
             </button>
           </div>
         )}
+        </div>
 
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center justify-center gap-2">
@@ -488,6 +534,7 @@ export default function HideGame({
             </div>
           )}
         </div>
+      </div>
       </div>
 
       {showReport && (

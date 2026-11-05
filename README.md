@@ -80,3 +80,8 @@ Jobs pg_cron installés :
 - Le nettoyage storage supprime les métadonnées des objets ; vérifie de temps
   en temps l'usage réel du bucket dans le dashboard.
 - Modération manuelle : table `reports` à consulter dans le dashboard.
+
+## Marketing kit
+
+Screenshots (mobile, tablet, desktop), the promo video and the Instagram
+carousel live in [`marketing/`](marketing/README.md).

@@ -82,23 +82,31 @@ export default function LeaderboardPage() {
   const rest = rows.slice(3);
   // ordre visuel du podium : 2 · 1 · 3
   const podium = [top3[1], top3[0], top3[2]];
-  const heights = ["h-28", "h-36", "h-24"];
+  const heights = ["h-28 lg:h-40", "h-36 lg:h-52", "h-24 lg:h-32"];
   const blockColor = ["bg-sky", "bg-yellow", "bg-pink"];
 
   return (
-    <div className="px-4 pt-6 flex flex-col gap-5">
-      <div className="flex items-start justify-between">
-        <h1 className="zh-display text-[2.8rem]">
-          Leader
-          <br />
-          board
-        </h1>
-        <Link href="/" aria-label="Back to home" className="zh-icon-btn">
-          <BackIcon size={20} />
-        </Link>
+    <div className="zh-page zh-page-mid !px-4 md:!px-8 lg:!px-10 pt-6 md:pt-10 flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:gap-x-12 lg:gap-y-5 lg:items-start">
+      <div className="flex items-start justify-between lg:col-start-1">
+        <div className="flex flex-col gap-2">
+          <h1 className="zh-display text-[2.8rem] md:text-[3.6rem]">
+            Leader
+            <br className="md:hidden" />
+            board
+          </h1>
+          <p className="hidden md:block text-[var(--muted)]">
+            Hiders score when people miss. Seekers score when they find.
+          </p>
+        </div>
+        {/* enveloppé : .zh-icon-btn fixe son propre display, qui l'emporterait sur md:hidden */}
+        <div className="md:hidden">
+          <Link href="/" aria-label="Back to home" className="zh-icon-btn">
+            <BackIcon size={20} />
+          </Link>
+        </div>
       </div>
 
-      <div className="zh-segment text-sm">
+      <div className="zh-segment text-sm lg:col-start-1">
         <button onClick={() => setBoard("hiders")} aria-pressed={board === "hiders"}>
           🫥 Top Hiders
         </button>
@@ -107,7 +115,7 @@ export default function LeaderboardPage() {
         </button>
       </div>
 
-      <div className="flex gap-2 text-xs items-center">
+      <div className="flex gap-2 text-xs items-center lg:col-start-1">
         {(
           [
             ["week", "This week"],
@@ -129,10 +137,10 @@ export default function LeaderboardPage() {
       </div>
 
       {loading ? (
-        <div aria-label="Loading leaderboard">
+        <>
           {/* Podium skeleton */}
-          <div className="grid grid-cols-3 items-end gap-2 pt-2">
-            {["h-28", "h-36", "h-24"].map((h, i) => (
+          <div aria-label="Loading leaderboard" className="grid grid-cols-3 items-end gap-2 pt-2 lg:col-start-1">
+            {heights.map((h, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
                 <div className="w-[52px] h-[52px] rounded-full zh-skeleton" />
                 <div className="h-2.5 w-14 rounded zh-skeleton" />
@@ -142,7 +150,7 @@ export default function LeaderboardPage() {
           </div>
 
           {/* List skeleton */}
-          <ol className="flex flex-col gap-2 mt-4 rounded-[2rem] bg-ink p-3">
+          <ol aria-hidden="true" className="flex flex-col gap-2 rounded-[2rem] bg-ink p-3 lg:col-start-2 lg:row-start-1 lg:row-span-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <li key={i} className="flex items-center gap-3 rounded-full bg-white/10 px-3 py-2.5">
                 <div className="w-[38px] h-[38px] rounded-full bg-white/15 shrink-0" />
@@ -153,9 +161,9 @@ export default function LeaderboardPage() {
               </li>
             ))}
           </ol>
-        </div>
+        </>
       ) : error ? (
-        <div className="zh-card p-8 text-center flex flex-col items-center gap-3">
+        <div className="zh-card p-8 text-center flex flex-col items-center gap-3 lg:col-span-2 lg:max-w-md lg:mx-auto lg:w-full">
           <Mascot shape="bean" mood="sad" color="var(--sky)" size={96} />
           <p className="text-[var(--muted)]">Couldn&apos;t load the leaderboard. Check your connection.</p>
           <button onClick={fetchBoard} className="zh-btn zh-btn-primary px-5 py-2.5 text-sm">
@@ -163,7 +171,7 @@ export default function LeaderboardPage() {
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="zh-card p-8 text-center flex flex-col items-center gap-3">
+        <div className="zh-card p-8 text-center flex flex-col items-center gap-3 lg:col-span-2 lg:max-w-md lg:mx-auto lg:w-full">
           <Mascot shape="cat" mood="wow" color="var(--yellow)" size={96} />
           <p className="text-[var(--muted)]">No one on the board yet. Go play!</p>
           <Link href="/play" className="zh-btn zh-btn-primary px-5 py-2.5 text-sm">
@@ -173,7 +181,7 @@ export default function LeaderboardPage() {
       ) : (
         <>
           {/* Podium */}
-          <div className="grid grid-cols-3 items-end gap-2 pt-4">
+          <div className="grid grid-cols-3 items-end gap-2 lg:gap-3 pt-4 lg:col-start-1">
             {podium.map((r, i) => {
               if (!r) return <div key={i} />;
               const rank = i === 0 ? 2 : i === 1 ? 1 : 3;
@@ -204,7 +212,7 @@ export default function LeaderboardPage() {
 
           {/* Reste du classement */}
           {rest.length > 0 && (
-            <div className="rounded-[2rem] bg-ink p-3 pt-5">
+            <div className="rounded-[2rem] bg-ink p-3 pt-5 lg:col-start-2 lg:row-start-1 lg:row-span-4">
               <h2 className="zh-display text-white text-2xl px-2 mb-3">Other ranks</h2>
               <ol className="flex flex-col gap-2">
                 {rest.map((r, i) => (
@@ -229,7 +237,7 @@ export default function LeaderboardPage() {
           )}
 
           {myRank && (
-            <div className="flex items-center gap-3 rounded-full pl-4 pr-5 py-3 bg-sky shadow-[0_14px_26px_-18px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center gap-3 rounded-full pl-4 pr-5 py-3 bg-sky shadow-[0_14px_26px_-18px_rgba(0,0,0,0.6)] lg:col-start-2">
               <span className="zh-display text-lg">#{myRank.rank}</span>
               <span className="flex-1 text-sm font-bold">You</span>
               <b className="zh-display text-xl">{myRank.score}</b>

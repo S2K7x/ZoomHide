@@ -55,8 +55,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body className="min-h-dvh antialiased">
-        <main className="mx-auto max-w-md min-h-dvh pb-28">{children}</main>
         <NavBar />
+        <main className="min-h-dvh pb-28 md:min-h-[calc(100dvh-4.5rem)] md:pb-20">{children}</main>
       </body>
     </html>
   );

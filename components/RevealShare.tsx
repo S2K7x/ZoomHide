@@ -69,9 +69,12 @@ export default function RevealShare(props: Props) {
       blob(60, 1720, 300, "#77c4f1");
       blob(1040, 1560, 150, "#ff5f9e");
 
-      // photo centrée, largeur ~92%
-      const pw = W * 0.92;
-      const ph = pw * (photo.naturalHeight / photo.naturalWidth);
+      // photo centrée, largeur ~92%, hauteur plafonnée : une photo portrait
+      // (4:5, 3:4…) poussait sinon le titre et la légende sur le pied de page.
+      const MAX_PH = 1120;
+      const ratio = photo.naturalHeight / photo.naturalWidth;
+      const pw = Math.min(W * 0.92, MAX_PH / ratio);
+      const ph = pw * ratio;
       const px = (W - pw) / 2;
       const py = Math.max(300, (H - ph) / 2 - 80);
       // photo en carte arrondie, liseré blanc

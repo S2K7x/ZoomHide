@@ -1,54 +1,13 @@
 import { ImageResponse } from "next/og";
+import { iconArt } from "@/lib/iconArt";
 
 export const dynamic = "force-static";
 export const contentType = "image/png";
 
 const SIZE = 512;
 
+// Fond plein (pas de coins arrondis) : le système (iOS, Android) applique son
+// propre masque à l'icône installée.
 export function GET() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "#ffd23f",
-          borderRadius: 112,
-        }}
-      >
-        <div style={{ display: "flex", position: "relative", width: 260, height: 260 }}>
-          <div
-            style={{
-              display: "flex",
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: 190,
-              height: 190,
-              borderRadius: "50%",
-              border: "26px solid #161616",
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              position: "absolute",
-              bottom: 6,
-              right: 6,
-              width: 96,
-              height: 30,
-              borderRadius: 15,
-              background: "#161616",
-              transform: "rotate(45deg)",
-              transformOrigin: "right center",
-            }}
-          />
-        </div>
-      </div>
-    ),
-    { width: SIZE, height: SIZE }
-  );
+  return new ImageResponse(iconArt(SIZE), { width: SIZE, height: SIZE });
 }
